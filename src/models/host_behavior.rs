@@ -1,0 +1,44 @@
+use serde::{Deserialize, Serialize};
+
+/// 主机行为告警
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HostBehaviorAlert {
+    pub alarm_id: String,
+    pub alarm_date: i64,
+    pub alarm_severity: u8,
+    pub alarm_name: String,
+    pub alarm_description: String,
+    pub alarm_type: u8,
+    pub alarm_subtype: u16,
+    pub source: u8,
+    pub control_rule_id: String,
+    pub control_task_id: String,
+    pub procedure_technique_id: Vec<String>,
+    pub session_id: String,
+    pub ip_version: Option<u8>,
+    pub src_ip: String,
+    pub src_port: Option<u16>,
+    pub dst_ip: String,
+    pub dst_port: Option<u16>,
+    pub protocol: String,
+    pub terminal_id: String,
+    pub source_file_path: String,
+    pub host_name: String,
+    pub terminal_ip: String,
+    pub user_account: String,
+    pub terminal_os: String,
+    pub dst_process_md5: String,
+    pub dst_process_path: String,
+    pub dst_process_cli: String,
+    pub src_process_md5: String,
+    pub src_process_path: String,
+    pub src_process_cli: String,
+    pub register_key_name: String,
+    pub register_key_value: String,
+    pub register_path: String,
+    pub file_name: String,
+    pub file_md5: String,
+    pub file_path: String,
+}
+
+

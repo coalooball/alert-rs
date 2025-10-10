@@ -1,0 +1,48 @@
+use serde::{Deserialize, Serialize};
+
+/// 恶意样本告警
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaliciousSampleAlert {
+    pub alarm_id: String,
+    pub alarm_date: i64,
+    pub alarm_severity: u8,
+    pub alarm_name: String,
+    pub alarm_description: String,
+    pub alarm_type: u8,
+    pub alarm_subtype: u16,
+    pub source: u8,
+    pub control_rule_id: String,
+    pub control_task_id: String,
+    pub procedure_technique_id: Vec<String>,
+    pub session_id: String,
+    pub ip_version: Option<u8>,
+    pub src_ip: String,
+    pub src_port: Option<u16>,
+    pub dst_ip: String,
+    pub dst_port: Option<u16>,
+    pub protocol: String,
+    pub terminal_id: String,
+    pub source_file_path: String,
+    pub sample_source: u8,
+    pub md5: String,
+    pub sha1: String,
+    pub sha256: String,
+    pub sha512: String,
+    pub ssdeep: String,
+    pub sample_original_name: String,
+    pub sample_description: String,
+    pub sample_family: String,
+    pub apt_group: String,
+    pub sample_alarm_engine: Vec<u8>,
+    pub target_platform: String,
+    pub file_type: String,
+    pub file_size: u64,
+    pub language: String,
+    pub rule: String,
+    pub target_content: String,
+    pub compile_date: i64,
+    pub last_analy_date: i64,
+    pub sample_alarm_detail: String,
+}
+
+
