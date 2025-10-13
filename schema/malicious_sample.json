@@ -1,0 +1,55 @@
+{
+    "type": "object",
+    "properties": {
+      "alarm_id": { "type": "string" },
+      "alarm_date": { "type": "integer" },
+      "alarm_severity": { "type": "integer" },
+      "alarm_name": { "type": "string" },
+      "alarm_description": { "type": "string" },
+      "alarm_type": { "type": "integer" },
+      "alarm_subtype": { "type": "integer" },
+      "source": { "type": "integer" },
+      "control_rule_id": { "type": "string" },
+      "control_task_id": { "type": "string" },
+      "procedure_technique_id": { 
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "session_id": { "type": "string" },
+      "ip_version": { "type": ["integer", "null"] },
+      "src_ip": { "type": "string" },
+      "src_port": { "type": ["integer", "null"] },
+      "dst_ip": { "type": "string" },
+      "dst_port": { "type": ["integer", "null"] },
+      "protocol": { "type": "string" },
+      "terminal_id": { "type": "string" },
+      "source_file_path": { "type": "string" },
+      "sample_source": { "type": "integer" },
+      "md5": { "type": "string" },
+      "sha1": { "type": "string" },
+      "sha256": { "type": "string" },
+      "sha512": { "type": "string" },
+      "ssdeep": { "type": "string" },
+      "sample_original_name": { "type": "string" },
+      "sample_description": { "type": "string" },
+      "sample_family": { "type": "string" },
+      "apt_group": { "type": "string" },
+      "sample_alarm_engine": {
+        "type": "array",
+        "items": { "type": "integer" }
+      },
+      "target_platform": { "type": "string" },
+      "file_type": { "type": "string" },
+      "file_size": { "type": "integer" },
+      "language": { "type": "string" },
+      "rule": { "type": "string" },
+      "target_content": { "type": "string" },
+      "compile_date": { "type": "integer" },
+      "last_analy_date": { "type": "integer" },
+      "sample_alarm_detail": { "type": "string" }
+    },
+    "required": [
+      "alarm_id", "alarm_date", "alarm_severity", "alarm_name",
+      "md5", "sha256", "file_type"
+    ]
+  }

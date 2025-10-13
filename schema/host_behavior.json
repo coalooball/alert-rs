@@ -1,0 +1,48 @@
+{
+    "type": "object",
+    "properties": {
+      "alarm_id": { "type": "string" },
+      "alarm_date": { "type": "integer" },
+      "alarm_severity": { "type": "integer" },
+      "alarm_name": { "type": "string" },
+      "alarm_description": { "type": "string" },
+      "alarm_type": { "type": "integer" },
+      "alarm_subtype": { "type": "integer" },
+      "source": { "type": "integer" },
+      "control_rule_id": { "type": "string" },
+      "control_task_id": { "type": "string" },
+      "procedure_technique_id": { 
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "session_id": { "type": "string" },
+      "ip_version": { "type": ["integer", "null"] },
+      "src_ip": { "type": "string" },
+      "src_port": { "type": ["integer", "null"] },
+      "dst_ip": { "type": "string" },
+      "dst_port": { "type": ["integer", "null"] },
+      "protocol": { "type": "string" },
+      "terminal_id": { "type": "string" },
+      "source_file_path": { "type": "string" },
+      "host_name": { "type": "string" },
+      "terminal_ip": { "type": "string" },
+      "user_account": { "type": "string" },
+      "terminal_os": { "type": "string" },
+      "dst_process_md5": { "type": "string" },
+      "dst_process_path": { "type": "string" },
+      "dst_process_cli": { "type": "string" },
+      "src_process_md5": { "type": "string" },
+      "src_process_path": { "type": "string" },
+      "src_process_cli": { "type": "string" },
+      "register_key_name": { "type": "string" },
+      "register_key_value": { "type": "string" },
+      "register_path": { "type": "string" },
+      "file_name": { "type": "string" },
+      "file_md5": { "type": "string" },
+      "file_path": { "type": "string" }
+    },
+    "required": [
+      "alarm_id", "alarm_date", "alarm_severity", "alarm_name",
+      "terminal_id", "host_name"
+    ]
+  }

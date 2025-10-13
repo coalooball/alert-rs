@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  arroyo:
+    image: ghcr.io/arroyosystems/arroyo:latest
+    container_name: arroyo-single
+    network_mode: host
+    environment:
+      RUST_LOG: info
+    restart: unless-stopped
+    # 如果需要映射端口而不是使用 host 网络，可改用以下写法：
+    # ports:
+    #   - "8000:8000"   # 例如 Web UI（按镜像对外端口调整）
+    #   - "8081:8081"   # 例如 API（按镜像对外端口调整）
+
+

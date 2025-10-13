@@ -1,0 +1,15 @@
+kafka = { brokers = "127.0.0.1:9092", client_id = "alert-generator", group_id = "alert", acks = "all", linger_ms = 5, compression = "lz4" }
+
+[topics]
+network_attack = "alerts.network_attack"
+malicious_sample = "alerts.malicious_sample"
+host_behavior = "alerts.host_behavior"
+
+[postgres]
+host = "127.0.0.1"
+port = 5433
+database = "alert_system"
+user = "admin"
+password = "postgres123"
+
+

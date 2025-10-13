@@ -1,0 +1,41 @@
+{
+    "type": "object",
+    "properties": {
+      "alarm_id": { "type": "string" },
+      "alarm_date": { "type": "integer" },
+      "alarm_severity": { "type": "integer" },
+      "alarm_name": { "type": "string" },
+      "alarm_description": { "type": "string" },
+      "alarm_type": { "type": "integer" },
+      "alarm_subtype": { "type": "integer" },
+      "source": { "type": "integer" },
+      "control_rule_id": { "type": "string" },
+      "control_task_id": { "type": "string" },
+      "procedure_technique_id": { 
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "session_id": { "type": "string" },
+      "ip_version": { "type": "integer" },
+      "src_ip": { "type": "string" },
+      "src_port": { "type": "integer" },
+      "dst_ip": { "type": "string" },
+      "dst_port": { "type": "integer" },
+      "protocol": { "type": "string" },
+      "terminal_id": { "type": "string" },
+      "source_file_path": { "type": "string" },
+      "signature_id": { "type": "string" },
+      "attack_payload": { "type": "string" },
+      "attack_stage": { "type": "string" },
+      "attack_ip": { "type": "string" },
+      "attacked_ip": { "type": "string" },
+      "apt_group": { "type": "string" },
+      "vul_type": { "type": "string" },
+      "CVE_id": { "type": "string" },
+      "vul_desc": { "type": "string" }
+    },
+    "required": [
+      "alarm_id", "alarm_date", "alarm_severity", "alarm_name", 
+      "src_ip", "dst_ip", "protocol"
+    ]
+  }
