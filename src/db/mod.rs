@@ -37,7 +37,7 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<RBatis> {
             source SMALLINT NOT NULL,
             control_rule_id TEXT NOT NULL,
             control_task_id TEXT NOT NULL,
-            procedure_technique_id TEXT[] NOT NULL,
+            procedure_technique_id JSONB NOT NULL,
             session_id TEXT NOT NULL,
             ip_version SMALLINT NOT NULL,
             src_ip TEXT NOT NULL,
@@ -77,7 +77,7 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<RBatis> {
             source SMALLINT NOT NULL,
             control_rule_id TEXT NOT NULL,
             control_task_id TEXT NOT NULL,
-            procedure_technique_id TEXT[] NOT NULL,
+            procedure_technique_id JSONB NOT NULL,
             session_id TEXT NOT NULL,
             ip_version SMALLINT,
             src_ip TEXT NOT NULL,
@@ -97,7 +97,7 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<RBatis> {
             sample_description TEXT NOT NULL,
             sample_family TEXT NOT NULL,
             apt_group TEXT NOT NULL,
-            sample_alarm_engine SMALLINT[] NOT NULL,
+            sample_alarm_engine JSONB NOT NULL,
             target_platform TEXT NOT NULL,
             file_type TEXT NOT NULL,
             file_size BIGINT NOT NULL,
@@ -128,7 +128,7 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<RBatis> {
             source SMALLINT NOT NULL,
             control_rule_id TEXT NOT NULL,
             control_task_id TEXT NOT NULL,
-            procedure_technique_id TEXT[] NOT NULL,
+            procedure_technique_id JSONB NOT NULL,
             session_id TEXT NOT NULL,
             ip_version SMALLINT,
             src_ip TEXT NOT NULL,
@@ -186,7 +186,7 @@ pub struct NetworkAttackRecord {
     pub source: u8,
     pub control_rule_id: String,
     pub control_task_id: String,
-    pub procedure_technique_id: Vec<String>,
+    pub procedure_technique_id: serde_json::Value,
     pub session_id: String,
     pub ip_version: u8,
     pub src_ip: String,
@@ -224,7 +224,7 @@ pub struct MaliciousSampleRecord {
     pub source: u8,
     pub control_rule_id: String,
     pub control_task_id: String,
-    pub procedure_technique_id: Vec<String>,
+    pub procedure_technique_id: serde_json::Value,
     pub session_id: String,
     pub ip_version: Option<u8>,
     pub src_ip: String,
@@ -244,7 +244,7 @@ pub struct MaliciousSampleRecord {
     pub sample_description: String,
     pub sample_family: String,
     pub apt_group: String,
-    pub sample_alarm_engine: Vec<u8>,
+    pub sample_alarm_engine: serde_json::Value,
     pub target_platform: String,
     pub file_type: String,
     pub file_size: u64,
@@ -272,7 +272,7 @@ pub struct HostBehaviorRecord {
     pub source: u8,
     pub control_rule_id: String,
     pub control_task_id: String,
-    pub procedure_technique_id: Vec<String>,
+    pub procedure_technique_id: serde_json::Value,
     pub session_id: String,
     pub ip_version: Option<u8>,
     pub src_ip: String,
@@ -316,7 +316,14 @@ pub async fn insert_network_attack(rb: &RBatis, alert: &NetworkAttackAlert) -> R
         source: alert.source,
         control_rule_id: alert.control_rule_id.clone(),
         control_task_id: alert.control_task_id.clone(),
-        procedure_technique_id: alert.procedure_technique_id.clone(),
+        procedure_technique_id: serde_json::Value::Array(
+            alert
+                .procedure_technique_id
+                .iter()
+                .cloned()
+                .map(serde_json::Value::String)
+                .collect(),
+        ),
         session_id: alert.session_id.clone(),
         ip_version: alert.ip_version,
         src_ip: alert.src_ip.clone(),
@@ -355,7 +362,14 @@ pub async fn insert_malicious_sample(rb: &RBatis, alert: &MaliciousSampleAlert) 
         source: alert.source,
         control_rule_id: alert.control_rule_id.clone(),
         control_task_id: alert.control_task_id.clone(),
-        procedure_technique_id: alert.procedure_technique_id.clone(),
+        procedure_technique_id: serde_json::Value::Array(
+            alert
+                .procedure_technique_id
+                .iter()
+                .cloned()
+                .map(serde_json::Value::String)
+                .collect(),
+        ),
         session_id: alert.session_id.clone(),
         ip_version: alert.ip_version,
         src_ip: alert.src_ip.clone(),
@@ -375,7 +389,14 @@ pub async fn insert_malicious_sample(rb: &RBatis, alert: &MaliciousSampleAlert) 
         sample_description: alert.sample_description.clone(),
         sample_family: alert.sample_family.clone(),
         apt_group: alert.apt_group.clone(),
-        sample_alarm_engine: alert.sample_alarm_engine.clone(),
+        sample_alarm_engine: serde_json::Value::Array(
+            alert
+                .sample_alarm_engine
+                .iter()
+                .cloned()
+                .map(|n| serde_json::Value::Number(serde_json::Number::from(n)))
+                .collect(),
+        ),
         target_platform: alert.target_platform.clone(),
         file_type: alert.file_type.clone(),
         file_size: alert.file_size,
@@ -405,7 +426,14 @@ pub async fn insert_host_behavior(rb: &RBatis, alert: &HostBehaviorAlert) -> Res
         source: alert.source,
         control_rule_id: alert.control_rule_id.clone(),
         control_task_id: alert.control_task_id.clone(),
-        procedure_technique_id: alert.procedure_technique_id.clone(),
+        procedure_technique_id: serde_json::Value::Array(
+            alert
+                .procedure_technique_id
+                .iter()
+                .cloned()
+                .map(serde_json::Value::String)
+                .collect(),
+        ),
         session_id: alert.session_id.clone(),
         ip_version: alert.ip_version,
         src_ip: alert.src_ip.clone(),

@@ -121,13 +121,13 @@ const showDetails = (row) => {
 }
 
 const getSeverityType = (severity) => {
-  const types = { 1: 'info', 2: 'success', 3: 'warning', 4: 'danger', 5: 'danger' }
-  return types[severity] || 'info'
+  const types = { 1: 'success', 2: 'warning', 3: 'danger' }
+  return types[severity] || 'success'
 }
 
 const getSeverityText = (severity) => {
-  const texts = { 1: '信息', 2: '低危', 3: '中危', 4: '高危', 5: '严重' }
-  return texts[severity] || '未知'
+  const texts = { 1: '低危', 2: '中危', 3: '高危' }
+  return texts[severity] || '低危'
 }
 
 const formatTimestamp = (timestamp) => {
