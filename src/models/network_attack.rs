@@ -36,5 +36,3 @@ pub struct NetworkAttackAlert {
     pub vul_desc: String,
     pub data: Option<Value>,
 }
-
-

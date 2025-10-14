@@ -18,7 +18,11 @@ pub async fn run_consumer(kafka: KafkaConfig, topics: TopicsConfig, rb: RBatis) 
         .set("auto.offset.reset", "earliest")
         .create()?;
 
-    consumer.subscribe(&[&topics.network_attack, &topics.malicious_sample, &topics.host_behavior])?;
+    consumer.subscribe(&[
+        &topics.network_attack,
+        &topics.malicious_sample,
+        &topics.host_behavior,
+    ])?;
 
     let mut stream = consumer.stream();
     while let Some(message) = stream.next().await {
@@ -29,16 +33,25 @@ pub async fn run_consumer(kafka: KafkaConfig, topics: TopicsConfig, rb: RBatis) 
                     match payload {
                         Ok(text) => {
                             if topic == topics.network_attack {
-                                if let Ok(alert) = serde_json::from_str::<NetworkAttackAlert>(text) {
-                                    if let Err(e) = insert_network_attack(&rb, &alert, text).await { tracing::error!("insert network_attack failed: {}", e); }
+                                if let Ok(alert) = serde_json::from_str::<NetworkAttackAlert>(text)
+                                {
+                                    if let Err(e) = insert_network_attack(&rb, &alert).await {
+                                        tracing::error!("insert network_attack failed: {}", e);
+                                    }
                                 }
                             } else if topic == topics.malicious_sample {
-                                if let Ok(alert) = serde_json::from_str::<MaliciousSampleAlert>(text) {
-                                    if let Err(e) = insert_malicious_sample(&rb, &alert, text).await { tracing::error!("insert malicious_sample failed: {}", e); }
+                                if let Ok(alert) =
+                                    serde_json::from_str::<MaliciousSampleAlert>(text)
+                                {
+                                    if let Err(e) = insert_malicious_sample(&rb, &alert).await {
+                                        tracing::error!("insert malicious_sample failed: {}", e);
+                                    }
                                 }
                             } else if topic == topics.host_behavior {
                                 if let Ok(alert) = serde_json::from_str::<HostBehaviorAlert>(text) {
-                                    if let Err(e) = insert_host_behavior(&rb, &alert, text).await { tracing::error!("insert host_behavior failed: {}", e); }
+                                    if let Err(e) = insert_host_behavior(&rb, &alert).await {
+                                        tracing::error!("insert host_behavior failed: {}", e);
+                                    }
                                 }
                             }
                         }
@@ -55,5 +68,3 @@ pub async fn run_consumer(kafka: KafkaConfig, topics: TopicsConfig, rb: RBatis) 
     }
     Ok(())
 }
-
-

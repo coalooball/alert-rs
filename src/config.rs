@@ -42,5 +42,3 @@ pub fn load_config<P: AsRef<Path>>(path: P) -> anyhow::Result<AppConfig> {
     let cfg: AppConfig = toml::from_str(&text)?;
     Ok(cfg)
 }
-
-

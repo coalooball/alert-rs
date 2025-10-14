@@ -42,5 +42,3 @@ pub struct HostBehaviorAlert {
     pub file_path: String,
     pub data: Option<Value>,
 }
-
-

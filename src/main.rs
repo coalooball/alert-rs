@@ -1,13 +1,13 @@
-mod models;
 mod config;
 mod db;
 mod kafka;
+mod models;
 
+use crate::config::load_config;
 use axum::Router;
 use std::net::SocketAddr;
 use tracing::info;
 use tracing_subscriber;
-use crate::config::load_config;
 
 #[tokio::main]
 async fn main() {
@@ -18,7 +18,9 @@ async fn main() {
     let config = load_config("config.toml").expect("读取配置失败");
 
     // 初始化数据库
-    let rb = db::init_postgres(&config.postgres).await.expect("Postgres 初始化失败");
+    let rb = db::init_postgres(&config.postgres)
+        .await
+        .expect("Postgres 初始化失败");
 
     // 启动 Kafka 消费任务
     let kafka_cfg = config.kafka.clone();

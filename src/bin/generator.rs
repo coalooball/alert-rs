@@ -106,11 +106,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 初始化 Kafka 生产者
     let mut cc = ClientConfig::new();
     cc.set("bootstrap.servers", &app_cfg.kafka.brokers);
-    if let Some(client_id) = &app_cfg.kafka.client_id { cc.set("client.id", client_id); }
-    if let Some(group_id) = &app_cfg.kafka.group_id { cc.set("group.id", group_id); }
-    if let Some(acks) = &app_cfg.kafka.acks { cc.set("acks", acks); }
-    if let Some(linger_ms) = app_cfg.kafka.linger_ms { cc.set("linger.ms", linger_ms.to_string()); }
-    if let Some(compression) = &app_cfg.kafka.compression { cc.set("compression.type", compression); }
+    if let Some(client_id) = &app_cfg.kafka.client_id {
+        cc.set("client.id", client_id);
+    }
+    if let Some(group_id) = &app_cfg.kafka.group_id {
+        cc.set("group.id", group_id);
+    }
+    if let Some(acks) = &app_cfg.kafka.acks {
+        cc.set("acks", acks);
+    }
+    if let Some(linger_ms) = app_cfg.kafka.linger_ms {
+        cc.set("linger.ms", linger_ms.to_string());
+    }
+    if let Some(compression) = &app_cfg.kafka.compression {
+        cc.set("compression.type", compression);
+    }
 
     let producer: FutureProducer = cc.create()?;
 
@@ -152,7 +162,14 @@ async fn generate_network_attacks(
     let continuous = count == 0;
 
     println!("🔴 生成网络攻击告警");
-    println!("   数量: {}", if continuous { "持续".to_string() } else { count.to_string() });
+    println!(
+        "   数量: {}",
+        if continuous {
+            "持续".to_string()
+        } else {
+            count.to_string()
+        }
+    );
     println!("   间隔: {}秒", interval);
     println!();
 
@@ -172,8 +189,13 @@ async fn generate_network_attacks(
             .await;
 
         match delivery {
-            Ok(_) => { println!("   ✓ 成功"); sent += 1; }
-            Err((e, _)) => { println!("   ✗ 失败: {}", e); }
+            Ok(_) => {
+                println!("   ✓ 成功");
+                sent += 1;
+            }
+            Err((e, _)) => {
+                println!("   ✗ 失败: {}", e);
+            }
         }
 
         if !continuous && sent >= count {
@@ -196,7 +218,14 @@ async fn generate_malicious_samples(
     let continuous = count == 0;
 
     println!("🟠 生成恶意样本告警");
-    println!("   数量: {}", if continuous { "持续".to_string() } else { count.to_string() });
+    println!(
+        "   数量: {}",
+        if continuous {
+            "持续".to_string()
+        } else {
+            count.to_string()
+        }
+    );
     println!("   间隔: {}秒", interval);
     println!();
 
@@ -216,8 +245,13 @@ async fn generate_malicious_samples(
             .await;
 
         match delivery {
-            Ok(_) => { println!("   ✓ 成功"); sent += 1; }
-            Err((e, _)) => { println!("   ✗ 失败: {}", e); }
+            Ok(_) => {
+                println!("   ✓ 成功");
+                sent += 1;
+            }
+            Err((e, _)) => {
+                println!("   ✗ 失败: {}", e);
+            }
         }
 
         if !continuous && sent >= count {
@@ -240,7 +274,14 @@ async fn generate_host_behaviors(
     let continuous = count == 0;
 
     println!("🟡 生成主机行为告警");
-    println!("   数量: {}", if continuous { "持续".to_string() } else { count.to_string() });
+    println!(
+        "   数量: {}",
+        if continuous {
+            "持续".to_string()
+        } else {
+            count.to_string()
+        }
+    );
     println!("   间隔: {}秒", interval);
     println!();
 
@@ -260,8 +301,13 @@ async fn generate_host_behaviors(
             .await;
 
         match delivery {
-            Ok(_) => { println!("   ✓ 成功"); sent += 1; }
-            Err((e, _)) => { println!("   ✗ 失败: {}", e); }
+            Ok(_) => {
+                println!("   ✓ 成功");
+                sent += 1;
+            }
+            Err((e, _)) => {
+                println!("   ✗ 失败: {}", e);
+            }
         }
 
         if !continuous && sent >= count {
@@ -284,7 +330,14 @@ async fn generate_all_types(
     let continuous = count == 0;
 
     println!("🌈 生成所有类型告警（混合模式）");
-    println!("   每种数量: {}", if continuous { "持续".to_string() } else { count.to_string() });
+    println!(
+        "   每种数量: {}",
+        if continuous {
+            "持续".to_string()
+        } else {
+            count.to_string()
+        }
+    );
     println!("   间隔: {}秒", interval);
     println!();
 
@@ -376,7 +429,14 @@ async fn generate_once(
                     Timeout::After(Duration::from_secs(5)),
                 )
                 .await;
-            println!("   状态: {}", if res.is_ok() { "✓ 成功" } else { "✗ 失败" });
+            println!(
+                "   状态: {}",
+                if res.is_ok() {
+                    "✓ 成功"
+                } else {
+                    "✗ 失败"
+                }
+            );
         }
         "sample" => {
             let alert = generators::generate_malicious_sample_alert();
@@ -394,7 +454,14 @@ async fn generate_once(
                     Timeout::After(Duration::from_secs(5)),
                 )
                 .await;
-            println!("   状态: {}", if res.is_ok() { "✓ 成功" } else { "✗ 失败" });
+            println!(
+                "   状态: {}",
+                if res.is_ok() {
+                    "✓ 成功"
+                } else {
+                    "✗ 失败"
+                }
+            );
         }
         "host" => {
             let alert = generators::generate_host_behavior_alert();
@@ -412,13 +479,22 @@ async fn generate_once(
                     Timeout::After(Duration::from_secs(5)),
                 )
                 .await;
-            println!("   状态: {}", if res.is_ok() { "✓ 成功" } else { "✗ 失败" });
+            println!(
+                "   状态: {}",
+                if res.is_ok() {
+                    "✓ 成功"
+                } else {
+                    "✗ 失败"
+                }
+            );
         }
         _ => {
-            println!("❌ 未知的告警类型: {}. 可选: network, sample, host", alert_type);
+            println!(
+                "❌ 未知的告警类型: {}. 可选: network, sample, host",
+                alert_type
+            );
         }
     }
 
     Ok(())
 }
-

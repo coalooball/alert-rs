@@ -46,5 +46,3 @@ pub struct MaliciousSampleAlert {
     pub sample_alarm_detail: String,
     pub data: Option<Value>,
 }
-
-
