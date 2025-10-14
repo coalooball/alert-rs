@@ -159,7 +159,7 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<RBatis> {
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct NetworkAttackRecord {
-    pub id: Option<String>,
+    pub id: Option<Uuid>,
     pub alarm_id: String,
     pub alarm_date: i64,
     pub alarm_severity: u8,
@@ -197,7 +197,7 @@ crud!(NetworkAttackRecord {}, "network_attack_alerts");
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct MaliciousSampleRecord {
-    pub id: Option<String>,
+    pub id: Option<Uuid>,
     pub alarm_id: String,
     pub alarm_date: i64,
     pub alarm_severity: u8,
@@ -245,7 +245,7 @@ crud!(MaliciousSampleRecord {}, "malicious_sample_alerts");
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct HostBehaviorRecord {
-    pub id: Option<String>,
+    pub id: Option<Uuid>,
     pub alarm_id: String,
     pub alarm_date: i64,
     pub alarm_severity: u8,
@@ -289,7 +289,7 @@ crud!(HostBehaviorRecord {}, "host_behavior_alerts");
 
 pub async fn insert_network_attack(rb: &RBatis, alert: &NetworkAttackAlert) -> Result<()> {
     let record = NetworkAttackRecord {
-        id: Some(Uuid::new_v4().to_string()),
+        id: Some(Uuid::new_v4()),
         alarm_id: alert.alarm_id.clone(),
         alarm_date: alert.alarm_date,
         alarm_severity: alert.alarm_severity,
@@ -328,7 +328,7 @@ pub async fn insert_network_attack(rb: &RBatis, alert: &NetworkAttackAlert) -> R
 
 pub async fn insert_malicious_sample(rb: &RBatis, alert: &MaliciousSampleAlert) -> Result<()> {
     let record = MaliciousSampleRecord {
-        id: Some(Uuid::new_v4().to_string()),
+        id: Some(Uuid::new_v4()),
         alarm_id: alert.alarm_id.clone(),
         alarm_date: alert.alarm_date,
         alarm_severity: alert.alarm_severity,
@@ -378,7 +378,7 @@ pub async fn insert_malicious_sample(rb: &RBatis, alert: &MaliciousSampleAlert) 
 
 pub async fn insert_host_behavior(rb: &RBatis, alert: &HostBehaviorAlert) -> Result<()> {
     let record = HostBehaviorRecord {
-        id: Some(Uuid::new_v4().to_string()),
+        id: Some(Uuid::new_v4()),
         alarm_id: alert.alarm_id.clone(),
         alarm_date: alert.alarm_date,
         alarm_severity: alert.alarm_severity,
@@ -420,4 +420,50 @@ pub async fn insert_host_behavior(rb: &RBatis, alert: &HostBehaviorAlert) -> Res
     };
     HostBehaviorRecord::insert(rb, &record).await?;
     Ok(())
+}
+
+// 查询函数
+pub async fn query_network_attacks(rb: &RBatis, page: u64, page_size: u64) -> Result<(Vec<NetworkAttackRecord>, u64)> {
+    let offset = (page - 1) * page_size;
+    let sql = format!(
+        "SELECT * FROM network_attack_alerts ORDER BY created_at DESC LIMIT {} OFFSET {}",
+        page_size, offset
+    );
+    let records: Vec<NetworkAttackRecord> = rb.query_decode(&sql, vec![]).await?;
+    
+    let count_sql = "SELECT COUNT(*) as count FROM network_attack_alerts";
+    let count: Option<i64> = rb.query_decode(count_sql, vec![]).await?;
+    let total = count.unwrap_or(0) as u64;
+    
+    Ok((records, total))
+}
+
+pub async fn query_malicious_samples(rb: &RBatis, page: u64, page_size: u64) -> Result<(Vec<MaliciousSampleRecord>, u64)> {
+    let offset = (page - 1) * page_size;
+    let sql = format!(
+        "SELECT * FROM malicious_sample_alerts ORDER BY created_at DESC LIMIT {} OFFSET {}",
+        page_size, offset
+    );
+    let records: Vec<MaliciousSampleRecord> = rb.query_decode(&sql, vec![]).await?;
+    
+    let count_sql = "SELECT COUNT(*) as count FROM malicious_sample_alerts";
+    let count: Option<i64> = rb.query_decode(count_sql, vec![]).await?;
+    let total = count.unwrap_or(0) as u64;
+    
+    Ok((records, total))
+}
+
+pub async fn query_host_behaviors(rb: &RBatis, page: u64, page_size: u64) -> Result<(Vec<HostBehaviorRecord>, u64)> {
+    let offset = (page - 1) * page_size;
+    let sql = format!(
+        "SELECT * FROM host_behavior_alerts ORDER BY created_at DESC LIMIT {} OFFSET {}",
+        page_size, offset
+    );
+    let records: Vec<HostBehaviorRecord> = rb.query_decode(&sql, vec![]).await?;
+    
+    let count_sql = "SELECT COUNT(*) as count FROM host_behavior_alerts";
+    let count: Option<i64> = rb.query_decode(count_sql, vec![]).await?;
+    let total = count.unwrap_or(0) as u64;
+    
+    Ok((records, total))
 }

@@ -4,10 +4,20 @@ mod kafka;
 mod models;
 
 use crate::config::load_config;
-use axum::Router;
+use axum::{
+    Router,
+    extract::{State, Query},
+    response::Json,
+    routing::get,
+};
+use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tracing::info;
 use tracing_subscriber;
+use rbatis::RBatis;
+use tower_http::cors::{CorsLayer, Any};
+use tower_http::services::ServeDir;
 
 #[tokio::main]
 async fn main() {
@@ -32,8 +42,30 @@ async fn main() {
         }
     });
 
-    // 移除所有 POST 接口，保留空路由
-    let app = Router::new();
+    // 创建共享状态
+    let app_state = Arc::new(rb);
+
+    // 配置 CORS
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
+    // API 路由
+    let api_routes = Router::new()
+        .route("/api/network-attacks", get(get_network_attacks))
+        .route("/api/malicious-samples", get(get_malicious_samples))
+        .route("/api/host-behaviors", get(get_host_behaviors))
+        .with_state(app_state);
+
+    // 静态文件服务 - 为 SPA 路由提供 index.html fallback
+    let serve_dir = ServeDir::new("frontend/dist");
+
+    // 合并路由
+    let app = Router::new()
+        .merge(api_routes)
+        .nest_service("/", serve_dir)
+        .layer(cors);
 
     // 服务器地址
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
@@ -43,7 +75,8 @@ async fn main() {
     println!("╚══════════════════════════════════════════════════════════╝");
     println!();
     println!("🌐 访问地址:");
-    println!("   👉 http://localhost:3000");
+    println!("   👉 前端界面: http://localhost:3000");
+    println!("   👉 API 接口: http://localhost:3000/api/*");
     println!();
     println!("📥 当前未开放 HTTP 数据接收端点（已切换为 Kafka 通道）");
     println!();
@@ -61,4 +94,93 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-// 已移除 POST 接口
+// 查询参数
+#[derive(Deserialize)]
+struct PageQuery {
+    #[serde(default = "default_page")]
+    page: u64,
+    #[serde(default = "default_page_size")]
+    page_size: u64,
+}
+
+fn default_page() -> u64 { 1 }
+fn default_page_size() -> u64 { 20 }
+
+// 响应结构
+#[derive(Serialize)]
+struct PageResponse<T> {
+    data: Vec<T>,
+    total: u64,
+    page: u64,
+    page_size: u64,
+}
+
+// API 处理函数
+async fn get_network_attacks(
+    State(rb): State<Arc<RBatis>>,
+    Query(params): Query<PageQuery>,
+) -> Json<PageResponse<db::NetworkAttackRecord>> {
+    match db::query_network_attacks(&rb, params.page, params.page_size).await {
+        Ok((data, total)) => Json(PageResponse {
+            data,
+            total,
+            page: params.page,
+            page_size: params.page_size,
+        }),
+        Err(e) => {
+            tracing::error!("Query network attacks failed: {}", e);
+            Json(PageResponse {
+                data: vec![],
+                total: 0,
+                page: params.page,
+                page_size: params.page_size,
+            })
+        }
+    }
+}
+
+async fn get_malicious_samples(
+    State(rb): State<Arc<RBatis>>,
+    Query(params): Query<PageQuery>,
+) -> Json<PageResponse<db::MaliciousSampleRecord>> {
+    match db::query_malicious_samples(&rb, params.page, params.page_size).await {
+        Ok((data, total)) => Json(PageResponse {
+            data,
+            total,
+            page: params.page,
+            page_size: params.page_size,
+        }),
+        Err(e) => {
+            tracing::error!("Query malicious samples failed: {}", e);
+            Json(PageResponse {
+                data: vec![],
+                total: 0,
+                page: params.page,
+                page_size: params.page_size,
+            })
+        }
+    }
+}
+
+async fn get_host_behaviors(
+    State(rb): State<Arc<RBatis>>,
+    Query(params): Query<PageQuery>,
+) -> Json<PageResponse<db::HostBehaviorRecord>> {
+    match db::query_host_behaviors(&rb, params.page, params.page_size).await {
+        Ok((data, total)) => Json(PageResponse {
+            data,
+            total,
+            page: params.page,
+            page_size: params.page_size,
+        }),
+        Err(e) => {
+            tracing::error!("Query host behaviors failed: {}", e);
+            Json(PageResponse {
+                data: vec![],
+                total: 0,
+                page: params.page,
+                page_size: params.page_size,
+            })
+        }
+    }
+}

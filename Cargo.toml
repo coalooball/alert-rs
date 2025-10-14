@@ -3,17 +3,22 @@ name = "rust-hello"
 version = "0.1.0"
 edition = "2021"
 
+# 运行服务器: cargo run --bin server
+# 启动 HTTP 服务器监听告警请求
 [[bin]]
 name = "server"
 path = "src/main.rs"
 
+# 运行生成器: cargo run --bin generator
+# 生成模拟告警数据并发送到 Kafka
 [[bin]]
-name = "generator"
+name = "generator" 
 path = "src/bin/generator.rs"
 
 [dependencies]
 # Axum web 框架
 axum = "0.7"
+tower-http = { version = "0.5", features = ["cors", "fs"] }
 # Tokio 异步运行时
 tokio = { version = "1", features = ["full"] }
 # 序列化
