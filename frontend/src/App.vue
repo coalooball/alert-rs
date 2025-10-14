@@ -4,11 +4,11 @@
       <!-- 顶部标题栏 -->
       <el-header style="background-color: #304156; height: 60px;">
         <div class="header-top">
-          <h2>安全告警系统</h2>
-          <div class="header-right">
+          <h2>告警系统</h2>
+          <!-- <div class="header-right">
             <el-tag type="success">在线</el-tag>
             <span style="margin-left: 15px">{{ currentTime }}</span>
-          </div>
+          </div> -->
         </div>
       </el-header>
 
