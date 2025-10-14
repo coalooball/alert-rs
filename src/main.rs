@@ -18,11 +18,23 @@ use tracing_subscriber;
 use rbatis::RBatis;
 use tower_http::cors::{CorsLayer, Any};
 use tower_http::services::ServeDir;
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+#[command(name = "server", about = "Axum 告警推送服务器")] 
+struct Args {
+    /// 重置数据库（删除所有业务表后退出）
+    #[arg(long, default_value_t = false)]
+    reset_db: bool,
+}
 
 #[tokio::main]
 async fn main() {
     // 初始化日志
     tracing_subscriber::fmt::init();
+
+    // 解析命令行
+    let args = Args::parse();
 
     // 读取配置
     let config = load_config("config.toml").expect("读取配置失败");
@@ -31,6 +43,16 @@ async fn main() {
     let rb = db::init_postgres(&config.postgres)
         .await
         .expect("Postgres 初始化失败");
+
+    // 若指定 --reset-db，则删除表后退出
+    if args.reset_db {
+        if let Err(e) = db::reset_database(&rb).await {
+            eprintln!("数据库重置失败: {}", e);
+            std::process::exit(1);
+        }
+        println!("✅ 数据库已重置（相关表已删除）。");
+        return;
+    }
 
     // 启动 Kafka 消费任务
     let kafka_cfg = config.kafka.clone();

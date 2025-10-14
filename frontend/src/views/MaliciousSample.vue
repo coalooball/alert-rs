@@ -3,7 +3,7 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <h2>🟠 恶意样本告警</h2>
+          <h2>恶意样本告警</h2>
           <el-button type="primary" @click="loadData" :loading="loading">
             <el-icon><Refresh /></el-icon> 刷新
           </el-button>

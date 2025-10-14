@@ -16,10 +16,17 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<RBatis> {
     let rb = RBatis::new();
     rb.init(PgDriver {}, &dsn)?;
 
+    // 启用 pgcrypto 扩展以支持 gen_random_uuid()
+    rb.exec(
+        "CREATE EXTENSION IF NOT EXISTS pgcrypto",
+        vec![],
+    )
+    .await?;
+
     // 网络攻击告警表 - 包含所有字段
     rb.exec(
         "CREATE TABLE IF NOT EXISTS network_attack_alerts (
-            id uuid PRIMARY KEY,
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             alarm_id TEXT NOT NULL,
             alarm_date BIGINT NOT NULL,
             alarm_severity SMALLINT NOT NULL,
@@ -59,7 +66,7 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<RBatis> {
     // 恶意样本告警表 - 包含所有字段
     rb.exec(
         "CREATE TABLE IF NOT EXISTS malicious_sample_alerts (
-            id uuid PRIMARY KEY,
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             alarm_id TEXT NOT NULL,
             alarm_date BIGINT NOT NULL,
             alarm_severity SMALLINT NOT NULL,
@@ -110,7 +117,7 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<RBatis> {
     // 主机行为告警表 - 包含所有字段
     rb.exec(
         "CREATE TABLE IF NOT EXISTS host_behavior_alerts (
-            id uuid PRIMARY KEY,
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             alarm_id TEXT NOT NULL,
             alarm_date BIGINT NOT NULL,
             alarm_severity SMALLINT NOT NULL,
@@ -155,6 +162,15 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<RBatis> {
     .await?;
 
     Ok(rb)
+}
+
+/// 清空数据库中的业务表
+pub async fn reset_database(rb: &RBatis) -> Result<()> {
+    // 依赖顺序较少，直接尝试删除三张业务表
+    rb.exec("DROP TABLE IF EXISTS network_attack_alerts CASCADE", vec![]).await?;
+    rb.exec("DROP TABLE IF EXISTS malicious_sample_alerts CASCADE", vec![]).await?;
+    rb.exec("DROP TABLE IF EXISTS host_behavior_alerts CASCADE", vec![]).await?;
+    Ok(())
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
@@ -289,7 +305,7 @@ crud!(HostBehaviorRecord {}, "host_behavior_alerts");
 
 pub async fn insert_network_attack(rb: &RBatis, alert: &NetworkAttackAlert) -> Result<()> {
     let record = NetworkAttackRecord {
-        id: Some(Uuid::new_v4()),
+        id: None,
         alarm_id: alert.alarm_id.clone(),
         alarm_date: alert.alarm_date,
         alarm_severity: alert.alarm_severity,
@@ -328,7 +344,7 @@ pub async fn insert_network_attack(rb: &RBatis, alert: &NetworkAttackAlert) -> R
 
 pub async fn insert_malicious_sample(rb: &RBatis, alert: &MaliciousSampleAlert) -> Result<()> {
     let record = MaliciousSampleRecord {
-        id: Some(Uuid::new_v4()),
+        id: None,
         alarm_id: alert.alarm_id.clone(),
         alarm_date: alert.alarm_date,
         alarm_severity: alert.alarm_severity,
@@ -378,7 +394,7 @@ pub async fn insert_malicious_sample(rb: &RBatis, alert: &MaliciousSampleAlert) 
 
 pub async fn insert_host_behavior(rb: &RBatis, alert: &HostBehaviorAlert) -> Result<()> {
     let record = HostBehaviorRecord {
-        id: Some(Uuid::new_v4()),
+        id: None,
         alarm_id: alert.alarm_id.clone(),
         alarm_date: alert.alarm_date,
         alarm_severity: alert.alarm_severity,
