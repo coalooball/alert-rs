@@ -51,6 +51,7 @@ pub fn generate_network_attack_alert() -> NetworkAttackAlert {
         vul_type: if subtype == 1003 { "SQL注入".to_string() } else { String::new() },
         cve_id: if subtype == 1003 { format!("CVE-2024-{}", rng.gen_range(1000..9999)) } else { String::new() },
         vul_desc: if subtype == 1003 { "应用程序未对用户输入进行适当验证".to_string() } else { String::new() },
+        data: None,
     }
 }
 
@@ -111,6 +112,7 @@ pub fn generate_malicious_sample_alert() -> MaliciousSampleAlert {
         compile_date: timestamp - rng.gen_range(86400000..31536000000),
         last_analy_date: timestamp,
         sample_alarm_detail: format!(r#"[{{"rule_name":"{}_{}_2024"}}]"#, family, type_name),
+        data: None,
     }
 }
 
@@ -170,6 +172,7 @@ pub fn generate_host_behavior_alert() -> HostBehaviorAlert {
         file_name: if subtype == 3001 { "xmrig".to_string() } else { "suspicious.exe".to_string() },
         file_md5: format!("{:032x}", rng.gen::<u128>()),
         file_path: process_path.to_string(),
+        data: None,
     }
 }
 

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 /// 恶意样本告警
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,6 +44,7 @@ pub struct MaliciousSampleAlert {
     pub compile_date: i64,
     pub last_analy_date: i64,
     pub sample_alarm_detail: String,
+    pub data: Option<Value>,
 }
 
 

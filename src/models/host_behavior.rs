@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 /// 主机行为告警
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -39,6 +40,7 @@ pub struct HostBehaviorAlert {
     pub file_name: String,
     pub file_md5: String,
     pub file_path: String,
+    pub data: Option<Value>,
 }
 
 

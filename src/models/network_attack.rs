@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 /// 网络攻击告警
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,6 +34,7 @@ pub struct NetworkAttackAlert {
     #[serde(rename = "CVE_id")]
     pub cve_id: String,
     pub vul_desc: String,
+    pub data: Option<Value>,
 }
 
 
