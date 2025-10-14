@@ -33,3 +33,15 @@ tracing-subscriber = "0.3"
 rdkafka = { version = "0.36", features = ["cmake-build"] }
 # TOML 配置
 toml = "0.8"
+
+# ORM 与数据库
+rbatis = "4"
+rbdc-pg = "4"
+# 兼容 ClickHouse（如需启用，可添加 rbdc-clickhouse 作为驱动）
+# rbdc-clickhouse = "4"
+
+# 工具
+uuid = { version = "1", features = ["v4", "serde", "fast-rng"] }
+anyhow = "1"
+futures = "0.3"
+rbs = "4"
