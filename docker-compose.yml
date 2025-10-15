@@ -7,6 +7,10 @@ services:
     image: alert-server:latest
     container_name: alert-server
     network_mode: host
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
     volumes:
       - ./config.toml:/app/config.toml:ro
     environment:

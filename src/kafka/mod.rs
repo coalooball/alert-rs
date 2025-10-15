@@ -15,7 +15,7 @@ pub async fn run_consumer(kafka: KafkaConfig, topics: TopicsConfig, pool: PgPool
         .set("client.id", &kafka.client_id)
         .set("enable.partition.eof", "false")
         .set("enable.auto.commit", "true")
-        .set("auto.offset.reset", "earliest")
+        .set("auto.offset.reset", &kafka.auto_offset_reset)
         .create()?;
 
     consumer.subscribe(&[

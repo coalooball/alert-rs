@@ -1,4 +1,12 @@
-kafka = { brokers = "127.0.0.1:9092", client_id = "alert-generator", group_id = "alert", acks = "all", linger_ms = 5, compression = "lz4" }
+[kafka]
+brokers = "127.0.0.1:9092"
+client_id = "alert-generator"
+group_id = "alert"
+acks = "all"
+linger_ms = 5
+compression = "lz4"
+# Kafka offset 策略: "earliest" (从最早的消息开始) 或 "latest" (只消费新消息)
+auto_offset_reset = "earliest"
 
 [topics]
 network_attack = "alerts.network_attack"

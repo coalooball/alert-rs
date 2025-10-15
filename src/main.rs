@@ -7,8 +7,9 @@ use crate::config::{load_config, AlarmTypesConfig};
 use axum::{
     Router,
     extract::{State, Query},
-    response::Json,
+    response::{Json, IntoResponse, Response},
     routing::get,
+    http::{StatusCode, Uri},
 };
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
@@ -91,13 +92,11 @@ async fn main() {
         .route("/api/alarm-types", get(get_alarm_types))
         .with_state(app_state);
 
-    // 静态文件服务
-    let serve_dir = ServeDir::new("frontend/dist");
-
-    // 合并路由
+    // 合并路由（使用自定义 fallback 支持 SPA 路由）
     let app = Router::new()
         .merge(api_routes)
-        .fallback_service(serve_dir)
+        .nest_service("/assets", ServeDir::new("frontend/dist/assets"))
+        .fallback(spa_fallback)
         .layer(cors);
 
     // 服务器地址
@@ -247,4 +246,17 @@ async fn get_alarm_types(
     State(state): State<Arc<AppState>>,
 ) -> Json<AlarmTypesConfig> {
     Json(state.alarm_types.clone())
+}
+
+// SPA fallback 处理器：对所有非 API 路由返回 index.html
+async fn spa_fallback(_uri: Uri) -> Response {
+    // 读取 index.html
+    match tokio::fs::read_to_string("frontend/dist/index.html").await {
+        Ok(contents) => {
+            axum::response::Html(contents).into_response()
+        }
+        Err(_) => {
+            (StatusCode::NOT_FOUND, "Frontend files not found").into_response()
+        }
+    }
 }

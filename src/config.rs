@@ -13,6 +13,13 @@ pub struct KafkaConfig {
     pub linger_ms: u64,
     #[allow(dead_code)]
     pub compression: String,
+    /// Kafka offset reset策略: "earliest" (从最早的消息开始) 或 "latest" (只消费新消息)
+    #[serde(default = "default_auto_offset_reset")]
+    pub auto_offset_reset: String,
+}
+
+fn default_auto_offset_reset() -> String {
+    "earliest".to_string()
 }
 
 #[derive(Debug, Deserialize, Clone)]
