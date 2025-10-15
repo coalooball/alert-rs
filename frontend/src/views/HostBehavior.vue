@@ -12,8 +12,13 @@
 
       <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
         <el-table-column type="index" label="序号" width="60" />
-        <el-table-column prop="alarm_id" label="告警ID" width="280" show-overflow-tooltip />
-        <el-table-column prop="alarm_name" label="告警名称" width="200" show-overflow-tooltip />
+        <el-table-column prop="alarm_severity" label="威胁等级" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="getSeverityType(row.alarm_severity)">
+              {{ getSeverityText(row.alarm_severity) }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="alarm_type" label="告警类型" width="150" show-overflow-tooltip>
           <template #default="{ row }">
             {{ getAlarmTypeName() }}
@@ -24,13 +29,11 @@
             {{ getAlarmSubtypeName(row.alarm_subtype) }}
           </template>
         </el-table-column>
-        <el-table-column prop="alarm_severity" label="严重等级" width="100" align="center">
-          <template #default="{ row }">
-            <el-tag :type="getSeverityType(row.alarm_severity)">
-              {{ getSeverityText(row.alarm_severity) }}
-            </el-tag>
-          </template>
-        </el-table-column>
+        <el-table-column prop="src_ip" label="源IP" width="150" />
+        <el-table-column prop="src_port" label="源端口" width="100" />
+        <el-table-column prop="dst_ip" label="目标IP" width="150" />
+        <el-table-column prop="dst_port" label="目标端口" width="100" />
+        <el-table-column prop="protocol" label="协议" width="100" />
         <el-table-column prop="host_name" label="主机名" width="180" show-overflow-tooltip />
         <el-table-column prop="terminal_ip" label="终端IP" width="150" />
         <el-table-column prop="user_account" label="用户账号" width="150" show-overflow-tooltip />
@@ -60,31 +63,40 @@
     <!-- 详情对话框 -->
     <el-dialog v-model="dialogVisible" title="主机行为详情" width="70%" :close-on-click-modal="false">
       <el-descriptions :column="2" border v-if="currentRow">
+        <el-descriptions-item label="记录ID">{{ currentRow.id }}</el-descriptions-item>
         <el-descriptions-item label="告警ID">{{ currentRow.alarm_id }}</el-descriptions-item>
         <el-descriptions-item label="告警时间">{{ formatTimestamp(currentRow.alarm_date) }}</el-descriptions-item>
-        <el-descriptions-item label="告警名称">{{ currentRow.alarm_name }}</el-descriptions-item>
-        <el-descriptions-item label="严重等级">
+        <el-descriptions-item label="威胁等级">
           <el-tag :type="getSeverityType(currentRow.alarm_severity)">
             {{ getSeverityText(currentRow.alarm_severity) }}
           </el-tag>
         </el-descriptions-item>
+        <el-descriptions-item label="告警名称">{{ currentRow.alarm_name }}</el-descriptions-item>
         <el-descriptions-item label="告警类型">{{ getAlarmTypeName() }}</el-descriptions-item>
         <el-descriptions-item label="告警子类型">{{ getAlarmSubtypeName(currentRow.alarm_subtype) }}</el-descriptions-item>
+        <el-descriptions-item label="数据来源">{{ getSourceText(currentRow.source) }}</el-descriptions-item>
         <el-descriptions-item label="告警描述" :span="2">{{ currentRow.alarm_description }}</el-descriptions-item>
+        
+        <el-descriptions-item label="控制规则ID">{{ currentRow.control_rule_id }}</el-descriptions-item>
+        <el-descriptions-item label="控制任务ID">{{ currentRow.control_task_id }}</el-descriptions-item>
+        <el-descriptions-item label="会话ID">{{ currentRow.session_id }}</el-descriptions-item>
+        <el-descriptions-item label="终端ID">{{ currentRow.terminal_id }}</el-descriptions-item>
+        <el-descriptions-item label="过程技术ID" :span="2">
+          {{ formatJSON(currentRow.procedure_technique_id) }}
+        </el-descriptions-item>
+        <el-descriptions-item label="源文件路径" :span="2">{{ currentRow.source_file_path }}</el-descriptions-item>
+        
+        <el-descriptions-item label="源IP">{{ currentRow.src_ip }}</el-descriptions-item>
+        <el-descriptions-item label="源端口">{{ currentRow.src_port }}</el-descriptions-item>
+        <el-descriptions-item label="目标IP">{{ currentRow.dst_ip }}</el-descriptions-item>
+        <el-descriptions-item label="目标端口">{{ currentRow.dst_port }}</el-descriptions-item>
+        <el-descriptions-item label="协议">{{ currentRow.protocol }}</el-descriptions-item>
+        <el-descriptions-item label="IP版本">{{ currentRow.ip_version }}</el-descriptions-item>
         
         <el-descriptions-item label="主机名">{{ currentRow.host_name }}</el-descriptions-item>
         <el-descriptions-item label="终端IP">{{ currentRow.terminal_ip }}</el-descriptions-item>
         <el-descriptions-item label="用户账号">{{ currentRow.user_account }}</el-descriptions-item>
         <el-descriptions-item label="操作系统">{{ currentRow.terminal_os }}</el-descriptions-item>
-        <el-descriptions-item label="终端ID">{{ currentRow.terminal_id }}</el-descriptions-item>
-        <el-descriptions-item label="协议">{{ currentRow.protocol }}</el-descriptions-item>
-        
-        <el-descriptions-item label="源IP:端口" :span="2">
-          {{ currentRow.src_ip }}{{ currentRow.src_port ? ':' + currentRow.src_port : '' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="目标IP:端口" :span="2">
-          {{ currentRow.dst_ip }}{{ currentRow.dst_port ? ':' + currentRow.dst_port : '' }}
-        </el-descriptions-item>
         
         <el-descriptions-item label="源进程MD5">{{ currentRow.src_process_md5 }}</el-descriptions-item>
         <el-descriptions-item label="目标进程MD5">{{ currentRow.dst_process_md5 }}</el-descriptions-item>
@@ -110,6 +122,11 @@
         <el-descriptions-item label="文件路径" :span="2">
           <el-input v-model="currentRow.file_path" readonly size="small" />
         </el-descriptions-item>
+        
+        <el-descriptions-item label="额外数据(data)" :span="2">
+          <el-input type="textarea" :rows="3" :value="formatJSON(currentRow.data)" readonly />
+        </el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ currentRow.created_at }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
   </div>
@@ -167,7 +184,18 @@ const getSeverityText = (severity) => {
 }
 
 const formatTimestamp = (timestamp) => {
+  if (!timestamp) return '-'
   return new Date(timestamp).toLocaleString('zh-CN')
+}
+
+const formatJSON = (value) => {
+  if (!value) return '-'
+  return JSON.stringify(value, null, 2)
+}
+
+const getSourceText = (source) => {
+  const texts = { 1: '网络流量', 2: '终端日志', 3: '威胁情报', 4: '其他' }
+  return texts[source] || source
 }
 
 const getAlarmTypeName = () => {
