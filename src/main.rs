@@ -3,7 +3,7 @@ mod db;
 mod kafka;
 mod models;
 
-use crate::config::load_config;
+use crate::config::{load_config, AlarmTypesConfig};
 use axum::{
     Router,
     extract::{State, Query},
@@ -15,7 +15,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::info;
 use tracing_subscriber;
-use rbatis::RBatis;
+use sqlx::PgPool;
 use tower_http::cors::{CorsLayer, Any};
 use tower_http::services::ServeDir;
 use clap::Parser;
@@ -26,6 +26,12 @@ struct Args {
     /// 重置数据库（删除所有业务表后退出）
     #[arg(long, default_value_t = false)]
     reset_db: bool,
+}
+
+// 应用状态
+struct AppState {
+    pool: PgPool,
+    alarm_types: AlarmTypesConfig,
 }
 
 #[tokio::main]
@@ -40,13 +46,13 @@ async fn main() {
     let config = load_config("config.toml").expect("读取配置失败");
 
     // 初始化数据库
-    let rb = db::init_postgres(&config.postgres)
+    let pool = db::init_postgres(&config.postgres)
         .await
         .expect("Postgres 初始化失败");
 
     // 若指定 --reset-db，则删除表后退出
     if args.reset_db {
-        if let Err(e) = db::reset_database(&rb).await {
+        if let Err(e) = db::reset_database(&pool).await {
             eprintln!("数据库重置失败: {}", e);
             std::process::exit(1);
         }
@@ -57,15 +63,18 @@ async fn main() {
     // 启动 Kafka 消费任务
     let kafka_cfg = config.kafka.clone();
     let topics_cfg = config.topics.clone();
-    let rb_clone = rb.clone();
+    let pool_clone = pool.clone();
     tokio::spawn(async move {
-        if let Err(e) = kafka::run_consumer(kafka_cfg, topics_cfg, rb_clone).await {
+        if let Err(e) = kafka::run_consumer(kafka_cfg, topics_cfg, pool_clone).await {
             tracing::error!("Kafka consumer stopped: {}", e);
         }
     });
 
     // 创建共享状态
-    let app_state = Arc::new(rb);
+    let app_state = Arc::new(AppState {
+        pool,
+        alarm_types: config.alarm_types,
+    });
 
     // 配置 CORS
     let cors = CorsLayer::new()
@@ -78,6 +87,8 @@ async fn main() {
         .route("/api/network-attacks", get(get_network_attacks))
         .route("/api/malicious-samples", get(get_malicious_samples))
         .route("/api/host-behaviors", get(get_host_behaviors))
+        .route("/api/invalid-alerts", get(get_invalid_alerts))
+        .route("/api/alarm-types", get(get_alarm_types))
         .with_state(app_state);
 
     // 静态文件服务 - 为 SPA 路由提供 index.html fallback
@@ -139,10 +150,10 @@ struct PageResponse<T> {
 
 // API 处理函数
 async fn get_network_attacks(
-    State(rb): State<Arc<RBatis>>,
+    State(state): State<Arc<AppState>>,
     Query(params): Query<PageQuery>,
 ) -> Json<PageResponse<db::NetworkAttackRecord>> {
-    match db::query_network_attacks(&rb, params.page, params.page_size).await {
+    match db::query_network_attacks(&state.pool, params.page, params.page_size).await {
         Ok((data, total)) => Json(PageResponse {
             data,
             total,
@@ -162,10 +173,10 @@ async fn get_network_attacks(
 }
 
 async fn get_malicious_samples(
-    State(rb): State<Arc<RBatis>>,
+    State(state): State<Arc<AppState>>,
     Query(params): Query<PageQuery>,
 ) -> Json<PageResponse<db::MaliciousSampleRecord>> {
-    match db::query_malicious_samples(&rb, params.page, params.page_size).await {
+    match db::query_malicious_samples(&state.pool, params.page, params.page_size).await {
         Ok((data, total)) => Json(PageResponse {
             data,
             total,
@@ -185,10 +196,10 @@ async fn get_malicious_samples(
 }
 
 async fn get_host_behaviors(
-    State(rb): State<Arc<RBatis>>,
+    State(state): State<Arc<AppState>>,
     Query(params): Query<PageQuery>,
 ) -> Json<PageResponse<db::HostBehaviorRecord>> {
-    match db::query_host_behaviors(&rb, params.page, params.page_size).await {
+    match db::query_host_behaviors(&state.pool, params.page, params.page_size).await {
         Ok((data, total)) => Json(PageResponse {
             data,
             total,
@@ -205,4 +216,34 @@ async fn get_host_behaviors(
             })
         }
     }
+}
+
+async fn get_invalid_alerts(
+    State(state): State<Arc<AppState>>,
+    Query(params): Query<PageQuery>,
+) -> Json<PageResponse<db::InvalidAlertRecord>> {
+    match db::query_invalid_alerts(&state.pool, params.page, params.page_size).await {
+        Ok((data, total)) => Json(PageResponse {
+            data,
+            total,
+            page: params.page,
+            page_size: params.page_size,
+        }),
+        Err(e) => {
+            tracing::error!("Query invalid alerts failed: {}", e);
+            Json(PageResponse {
+                data: vec![],
+                total: 0,
+                page: params.page,
+                page_size: params.page_size,
+            })
+        }
+    }
+}
+
+// 获取告警类型枚举
+async fn get_alarm_types(
+    State(state): State<Arc<AppState>>,
+) -> Json<AlarmTypesConfig> {
+    Json(state.alarm_types.clone())
 }

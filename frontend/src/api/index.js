@@ -25,3 +25,13 @@ export const getHostBehaviors = (page = 1, pageSize = 20) => {
   })
 }
 
+export const getInvalidAlerts = (page = 1, pageSize = 20) => {
+  return api.get('/invalid-alerts', {
+    params: { page, page_size: pageSize }
+  })
+}
+
+export const getAlarmTypes = () => {
+  return api.get('/alarm-types')
+}
+

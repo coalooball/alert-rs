@@ -25,7 +25,7 @@ tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 # 时间处理
-chrono = "0.4"
+chrono = { version = "0.4", features = ["serde"] }
 # 随机数
 rand = "0.8"
 # 命令行参数解析
@@ -39,14 +39,10 @@ rdkafka = { version = "0.36", features = ["cmake-build"] }
 # TOML 配置
 toml = "0.8"
 
-# ORM 与数据库
-rbatis = "4"
-rbdc-pg = "4"
-# 兼容 ClickHouse（如需启用，可添加 rbdc-clickhouse 作为驱动）
-# rbdc-clickhouse = "4"
+# 数据库
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json"] }
 
 # 工具
 uuid = { version = "1", features = ["v4", "serde", "fast-rng"] }
 anyhow = "1"
 futures = "0.3"
-rbs = "4"

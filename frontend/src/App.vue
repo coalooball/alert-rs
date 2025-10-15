@@ -18,6 +18,7 @@
           <el-tab-pane label="网络攻击" name="/network-attack"></el-tab-pane>
           <el-tab-pane label="恶意样本" name="/malicious-sample"></el-tab-pane>
           <el-tab-pane label="主机行为" name="/host-behavior"></el-tab-pane>
+          <el-tab-pane label="无效告警" name="/invalid-alert"></el-tab-pane>
         </el-tabs>
       </el-header>
 

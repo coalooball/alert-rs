@@ -1,30 +1,29 @@
 use anyhow::Result;
-use rbatis::crud;
-use rbatis::rbdc::datetime::DateTime;
-use rbatis::RBatis;
-use rbdc_pg::driver::PgDriver;
+use sqlx::{PgPool, postgres::PgPoolOptions};
 use uuid::Uuid;
+use chrono::{DateTime, Utc};
 
 use crate::config::PostgresConfig;
 use crate::models::{HostBehaviorAlert, MaliciousSampleAlert, NetworkAttackAlert};
 
-pub async fn init_postgres(pg: &PostgresConfig) -> Result<RBatis> {
+pub async fn init_postgres(pg: &PostgresConfig) -> Result<PgPool> {
     let dsn = format!(
         "postgres://{}:{}@{}:{}/{}",
         pg.user, pg.password, pg.host, pg.port, pg.database
     );
-    let rb = RBatis::new();
-    rb.init(PgDriver {}, &dsn)?;
+    
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&dsn)
+        .await?;
 
     // 启用 pgcrypto 扩展以支持 gen_random_uuid()
-    rb.exec(
-        "CREATE EXTENSION IF NOT EXISTS pgcrypto",
-        vec![],
-    )
-    .await?;
+    sqlx::query("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+        .execute(&pool)
+        .await?;
 
     // 网络攻击告警表 - 包含所有字段
-    rb.exec(
+    sqlx::query(
         "CREATE TABLE IF NOT EXISTS network_attack_alerts (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             alarm_id TEXT NOT NULL,
@@ -58,13 +57,13 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<RBatis> {
             vul_desc TEXT NOT NULL,
             data JSONB,
             created_at TIMESTAMPTZ DEFAULT now()
-        )",
-        vec![],
+        )"
     )
+    .execute(&pool)
     .await?;
 
     // 恶意样本告警表 - 包含所有字段
-    rb.exec(
+    sqlx::query(
         "CREATE TABLE IF NOT EXISTS malicious_sample_alerts (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             alarm_id TEXT NOT NULL,
@@ -109,13 +108,13 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<RBatis> {
             sample_alarm_detail TEXT NOT NULL,
             data JSONB,
             created_at TIMESTAMPTZ DEFAULT now()
-        )",
-        vec![],
+        )"
     )
+    .execute(&pool)
     .await?;
 
     // 主机行为告警表 - 包含所有字段
-    rb.exec(
+    sqlx::query(
         "CREATE TABLE IF NOT EXISTS host_behavior_alerts (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             alarm_id TEXT NOT NULL,
@@ -156,43 +155,63 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<RBatis> {
             file_path TEXT NOT NULL,
             data JSONB,
             created_at TIMESTAMPTZ DEFAULT now()
-        )",
-        vec![],
+        )"
     )
+    .execute(&pool)
     .await?;
 
-    Ok(rb)
+    // 无效告警表 - 保存解析失败的原始数据与错误信息
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS invalid_alerts (
+            id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            data JSONB NOT NULL,
+            error TEXT NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT now()
+        )"
+    )
+    .execute(&pool)
+    .await?;
+
+    Ok(pool)
 }
 
 /// 清空数据库中的业务表
-pub async fn reset_database(rb: &RBatis) -> Result<()> {
-    // 依赖顺序较少，直接尝试删除三张业务表
-    rb.exec("DROP TABLE IF EXISTS network_attack_alerts CASCADE", vec![]).await?;
-    rb.exec("DROP TABLE IF EXISTS malicious_sample_alerts CASCADE", vec![]).await?;
-    rb.exec("DROP TABLE IF EXISTS host_behavior_alerts CASCADE", vec![]).await?;
+pub async fn reset_database(pool: &PgPool) -> Result<()> {
+    sqlx::query("DROP TABLE IF EXISTS network_attack_alerts CASCADE")
+        .execute(pool)
+        .await?;
+    sqlx::query("DROP TABLE IF EXISTS malicious_sample_alerts CASCADE")
+        .execute(pool)
+        .await?;
+    sqlx::query("DROP TABLE IF EXISTS host_behavior_alerts CASCADE")
+        .execute(pool)
+        .await?;
+    sqlx::query("DROP TABLE IF EXISTS invalid_alerts CASCADE")
+        .execute(pool)
+        .await?;
     Ok(())
 }
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, sqlx::FromRow)]
 pub struct NetworkAttackRecord {
-    pub id: Option<Uuid>,
+    pub id: Uuid,
     pub alarm_id: String,
     pub alarm_date: i64,
-    pub alarm_severity: u8,
+    pub alarm_severity: i16,
     pub alarm_name: String,
     pub alarm_description: String,
-    pub alarm_type: u8,
-    pub alarm_subtype: u16,
-    pub source: u8,
+    pub alarm_type: i16,
+    pub alarm_subtype: i32,
+    pub source: i16,
     pub control_rule_id: String,
     pub control_task_id: String,
     pub procedure_technique_id: serde_json::Value,
     pub session_id: String,
-    pub ip_version: u8,
+    pub ip_version: i16,
     pub src_ip: String,
-    pub src_port: u16,
+    pub src_port: i32,
     pub dst_ip: String,
-    pub dst_port: u16,
+    pub dst_port: i32,
     pub protocol: String,
     pub terminal_id: String,
     pub source_file_path: String,
@@ -203,38 +222,36 @@ pub struct NetworkAttackRecord {
     pub attacked_ip: String,
     pub apt_group: String,
     pub vul_type: String,
-    #[serde(rename = "cve_id")]
     pub cve_id: String,
     pub vul_desc: String,
     pub data: Option<serde_json::Value>,
-    pub created_at: Option<DateTime>,
+    pub created_at: DateTime<Utc>,
 }
-crud!(NetworkAttackRecord {}, "network_attack_alerts");
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, sqlx::FromRow)]
 pub struct MaliciousSampleRecord {
-    pub id: Option<Uuid>,
+    pub id: Uuid,
     pub alarm_id: String,
     pub alarm_date: i64,
-    pub alarm_severity: u8,
+    pub alarm_severity: i16,
     pub alarm_name: String,
     pub alarm_description: String,
-    pub alarm_type: u8,
-    pub alarm_subtype: u16,
-    pub source: u8,
+    pub alarm_type: i16,
+    pub alarm_subtype: i32,
+    pub source: i16,
     pub control_rule_id: String,
     pub control_task_id: String,
     pub procedure_technique_id: serde_json::Value,
     pub session_id: String,
-    pub ip_version: Option<u8>,
+    pub ip_version: Option<i16>,
     pub src_ip: String,
-    pub src_port: Option<u16>,
+    pub src_port: Option<i32>,
     pub dst_ip: String,
-    pub dst_port: Option<u16>,
+    pub dst_port: Option<i32>,
     pub protocol: String,
     pub terminal_id: String,
     pub source_file_path: String,
-    pub sample_source: u8,
+    pub sample_source: i16,
     pub md5: String,
     pub sha1: String,
     pub sha256: String,
@@ -247,7 +264,7 @@ pub struct MaliciousSampleRecord {
     pub sample_alarm_engine: serde_json::Value,
     pub target_platform: String,
     pub file_type: String,
-    pub file_size: u64,
+    pub file_size: i64,
     pub language: String,
     pub rule: String,
     pub target_content: String,
@@ -255,30 +272,29 @@ pub struct MaliciousSampleRecord {
     pub last_analy_date: i64,
     pub sample_alarm_detail: String,
     pub data: Option<serde_json::Value>,
-    pub created_at: Option<DateTime>,
+    pub created_at: DateTime<Utc>,
 }
-crud!(MaliciousSampleRecord {}, "malicious_sample_alerts");
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, sqlx::FromRow)]
 pub struct HostBehaviorRecord {
-    pub id: Option<Uuid>,
+    pub id: Uuid,
     pub alarm_id: String,
     pub alarm_date: i64,
-    pub alarm_severity: u8,
+    pub alarm_severity: i16,
     pub alarm_name: String,
     pub alarm_description: String,
-    pub alarm_type: u8,
-    pub alarm_subtype: u16,
-    pub source: u8,
+    pub alarm_type: i16,
+    pub alarm_subtype: i32,
+    pub source: i16,
     pub control_rule_id: String,
     pub control_task_id: String,
     pub procedure_technique_id: serde_json::Value,
     pub session_id: String,
-    pub ip_version: Option<u8>,
+    pub ip_version: Option<i16>,
     pub src_ip: String,
-    pub src_port: Option<u16>,
+    pub src_port: Option<i32>,
     pub dst_ip: String,
-    pub dst_port: Option<u16>,
+    pub dst_port: Option<i32>,
     pub protocol: String,
     pub terminal_id: String,
     pub source_file_path: String,
@@ -299,215 +315,312 @@ pub struct HostBehaviorRecord {
     pub file_md5: String,
     pub file_path: String,
     pub data: Option<serde_json::Value>,
-    pub created_at: Option<DateTime>,
+    pub created_at: DateTime<Utc>,
 }
-crud!(HostBehaviorRecord {}, "host_behavior_alerts");
 
-pub async fn insert_network_attack(rb: &RBatis, alert: &NetworkAttackAlert) -> Result<()> {
-    let record = NetworkAttackRecord {
-        id: None,
-        alarm_id: alert.alarm_id.clone(),
-        alarm_date: alert.alarm_date,
-        alarm_severity: alert.alarm_severity,
-        alarm_name: alert.alarm_name.clone(),
-        alarm_description: alert.alarm_description.clone(),
-        alarm_type: alert.alarm_type,
-        alarm_subtype: alert.alarm_subtype,
-        source: alert.source,
-        control_rule_id: alert.control_rule_id.clone(),
-        control_task_id: alert.control_task_id.clone(),
-        procedure_technique_id: serde_json::Value::Array(
-            alert
-                .procedure_technique_id
-                .iter()
-                .cloned()
-                .map(serde_json::Value::String)
-                .collect(),
-        ),
-        session_id: alert.session_id.clone(),
-        ip_version: alert.ip_version,
-        src_ip: alert.src_ip.clone(),
-        src_port: alert.src_port,
-        dst_ip: alert.dst_ip.clone(),
-        dst_port: alert.dst_port,
-        protocol: alert.protocol.clone(),
-        terminal_id: alert.terminal_id.clone(),
-        source_file_path: alert.source_file_path.clone(),
-        signature_id: alert.signature_id.clone(),
-        attack_payload: alert.attack_payload.clone(),
-        attack_stage: alert.attack_stage.clone(),
-        attack_ip: alert.attack_ip.clone(),
-        attacked_ip: alert.attacked_ip.clone(),
-        apt_group: alert.apt_group.clone(),
-        vul_type: alert.vul_type.clone(),
-        cve_id: alert.cve_id.clone(),
-        vul_desc: alert.vul_desc.clone(),
-        data: alert.data.clone(),
-        created_at: None,
-    };
-    NetworkAttackRecord::insert(rb, &record).await?;
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, sqlx::FromRow)]
+pub struct InvalidAlertRecord {
+    pub id: Uuid,
+    pub data: serde_json::Value,
+    pub error: String,
+    pub created_at: DateTime<Utc>,
+}
+
+pub async fn insert_network_attack(pool: &PgPool, alert: &NetworkAttackAlert) -> Result<()> {
+    let procedure_technique_id = serde_json::Value::Array(
+        alert
+            .procedure_technique_id
+            .iter()
+            .cloned()
+            .map(serde_json::Value::String)
+            .collect(),
+    );
+
+    sqlx::query(
+        "INSERT INTO network_attack_alerts (
+            alarm_id, alarm_date, alarm_severity, alarm_name, alarm_description,
+            alarm_type, alarm_subtype, source, control_rule_id, control_task_id,
+            procedure_technique_id, session_id, ip_version, src_ip, src_port,
+            dst_ip, dst_port, protocol, terminal_id, source_file_path,
+            signature_id, attack_payload, attack_stage, attack_ip, attacked_ip,
+            apt_group, vul_type, cve_id, vul_desc, data
+        ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+            $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+            $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
+        )"
+    )
+    .bind(&alert.alarm_id)
+    .bind(alert.alarm_date)
+    .bind(alert.alarm_severity as i16)
+    .bind(&alert.alarm_name)
+    .bind(&alert.alarm_description)
+    .bind(alert.alarm_type as i16)
+    .bind(alert.alarm_subtype as i32)
+    .bind(alert.source as i16)
+    .bind(&alert.control_rule_id)
+    .bind(&alert.control_task_id)
+    .bind(&procedure_technique_id)
+    .bind(&alert.session_id)
+    .bind(alert.ip_version as i16)
+    .bind(&alert.src_ip)
+    .bind(alert.src_port as i32)
+    .bind(&alert.dst_ip)
+    .bind(alert.dst_port as i32)
+    .bind(&alert.protocol)
+    .bind(&alert.terminal_id)
+    .bind(&alert.source_file_path)
+    .bind(&alert.signature_id)
+    .bind(&alert.attack_payload)
+    .bind(&alert.attack_stage)
+    .bind(&alert.attack_ip)
+    .bind(&alert.attacked_ip)
+    .bind(&alert.apt_group)
+    .bind(&alert.vul_type)
+    .bind(&alert.cve_id)
+    .bind(&alert.vul_desc)
+    .bind(&alert.data)
+    .execute(pool)
+    .await?;
+
     Ok(())
 }
 
-pub async fn insert_malicious_sample(rb: &RBatis, alert: &MaliciousSampleAlert) -> Result<()> {
-    let record = MaliciousSampleRecord {
-        id: None,
-        alarm_id: alert.alarm_id.clone(),
-        alarm_date: alert.alarm_date,
-        alarm_severity: alert.alarm_severity,
-        alarm_name: alert.alarm_name.clone(),
-        alarm_description: alert.alarm_description.clone(),
-        alarm_type: alert.alarm_type,
-        alarm_subtype: alert.alarm_subtype,
-        source: alert.source,
-        control_rule_id: alert.control_rule_id.clone(),
-        control_task_id: alert.control_task_id.clone(),
-        procedure_technique_id: serde_json::Value::Array(
-            alert
-                .procedure_technique_id
-                .iter()
-                .cloned()
-                .map(serde_json::Value::String)
-                .collect(),
-        ),
-        session_id: alert.session_id.clone(),
-        ip_version: alert.ip_version,
-        src_ip: alert.src_ip.clone(),
-        src_port: alert.src_port,
-        dst_ip: alert.dst_ip.clone(),
-        dst_port: alert.dst_port,
-        protocol: alert.protocol.clone(),
-        terminal_id: alert.terminal_id.clone(),
-        source_file_path: alert.source_file_path.clone(),
-        sample_source: alert.sample_source,
-        md5: alert.md5.clone(),
-        sha1: alert.sha1.clone(),
-        sha256: alert.sha256.clone(),
-        sha512: alert.sha512.clone(),
-        ssdeep: alert.ssdeep.clone(),
-        sample_original_name: alert.sample_original_name.clone(),
-        sample_description: alert.sample_description.clone(),
-        sample_family: alert.sample_family.clone(),
-        apt_group: alert.apt_group.clone(),
-        sample_alarm_engine: serde_json::Value::Array(
-            alert
-                .sample_alarm_engine
-                .iter()
-                .cloned()
-                .map(|n| serde_json::Value::Number(serde_json::Number::from(n)))
-                .collect(),
-        ),
-        target_platform: alert.target_platform.clone(),
-        file_type: alert.file_type.clone(),
-        file_size: alert.file_size,
-        language: alert.language.clone(),
-        rule: alert.rule.clone(),
-        target_content: alert.target_content.clone(),
-        compile_date: alert.compile_date,
-        last_analy_date: alert.last_analy_date,
-        sample_alarm_detail: alert.sample_alarm_detail.clone(),
-        data: alert.data.clone(),
-        created_at: None,
-    };
-    MaliciousSampleRecord::insert(rb, &record).await?;
+pub async fn insert_malicious_sample(pool: &PgPool, alert: &MaliciousSampleAlert) -> Result<()> {
+    let procedure_technique_id = serde_json::Value::Array(
+        alert
+            .procedure_technique_id
+            .iter()
+            .cloned()
+            .map(serde_json::Value::String)
+            .collect(),
+    );
+
+    let sample_alarm_engine = serde_json::Value::Array(
+        alert
+            .sample_alarm_engine
+            .iter()
+            .cloned()
+            .map(|n| serde_json::Value::Number(serde_json::Number::from(n)))
+            .collect(),
+    );
+
+    sqlx::query(
+        "INSERT INTO malicious_sample_alerts (
+            alarm_id, alarm_date, alarm_severity, alarm_name, alarm_description,
+            alarm_type, alarm_subtype, source, control_rule_id, control_task_id,
+            procedure_technique_id, session_id, ip_version, src_ip, src_port,
+            dst_ip, dst_port, protocol, terminal_id, source_file_path,
+            sample_source, md5, sha1, sha256, sha512, ssdeep,
+            sample_original_name, sample_description, sample_family, apt_group,
+            sample_alarm_engine, target_platform, file_type, file_size, language,
+            rule, target_content, compile_date, last_analy_date, sample_alarm_detail, data
+        ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+            $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+            $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+            $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41
+        )"
+    )
+    .bind(&alert.alarm_id)
+    .bind(alert.alarm_date)
+    .bind(alert.alarm_severity as i16)
+    .bind(&alert.alarm_name)
+    .bind(&alert.alarm_description)
+    .bind(alert.alarm_type as i16)
+    .bind(alert.alarm_subtype as i32)
+    .bind(alert.source as i16)
+    .bind(&alert.control_rule_id)
+    .bind(&alert.control_task_id)
+    .bind(&procedure_technique_id)
+    .bind(&alert.session_id)
+    .bind(alert.ip_version.map(|v| v as i16))
+    .bind(&alert.src_ip)
+    .bind(alert.src_port.map(|v| v as i32))
+    .bind(&alert.dst_ip)
+    .bind(alert.dst_port.map(|v| v as i32))
+    .bind(&alert.protocol)
+    .bind(&alert.terminal_id)
+    .bind(&alert.source_file_path)
+    .bind(alert.sample_source as i16)
+    .bind(&alert.md5)
+    .bind(&alert.sha1)
+    .bind(&alert.sha256)
+    .bind(&alert.sha512)
+    .bind(&alert.ssdeep)
+    .bind(&alert.sample_original_name)
+    .bind(&alert.sample_description)
+    .bind(&alert.sample_family)
+    .bind(&alert.apt_group)
+    .bind(&sample_alarm_engine)
+    .bind(&alert.target_platform)
+    .bind(&alert.file_type)
+    .bind(alert.file_size as i64)
+    .bind(&alert.language)
+    .bind(&alert.rule)
+    .bind(&alert.target_content)
+    .bind(alert.compile_date)
+    .bind(alert.last_analy_date)
+    .bind(&alert.sample_alarm_detail)
+    .bind(&alert.data)
+    .execute(pool)
+    .await?;
+
     Ok(())
 }
 
-pub async fn insert_host_behavior(rb: &RBatis, alert: &HostBehaviorAlert) -> Result<()> {
-    let record = HostBehaviorRecord {
-        id: None,
-        alarm_id: alert.alarm_id.clone(),
-        alarm_date: alert.alarm_date,
-        alarm_severity: alert.alarm_severity,
-        alarm_name: alert.alarm_name.clone(),
-        alarm_description: alert.alarm_description.clone(),
-        alarm_type: alert.alarm_type,
-        alarm_subtype: alert.alarm_subtype,
-        source: alert.source,
-        control_rule_id: alert.control_rule_id.clone(),
-        control_task_id: alert.control_task_id.clone(),
-        procedure_technique_id: serde_json::Value::Array(
-            alert
-                .procedure_technique_id
-                .iter()
-                .cloned()
-                .map(serde_json::Value::String)
-                .collect(),
-        ),
-        session_id: alert.session_id.clone(),
-        ip_version: alert.ip_version,
-        src_ip: alert.src_ip.clone(),
-        src_port: alert.src_port,
-        dst_ip: alert.dst_ip.clone(),
-        dst_port: alert.dst_port,
-        protocol: alert.protocol.clone(),
-        terminal_id: alert.terminal_id.clone(),
-        source_file_path: alert.source_file_path.clone(),
-        host_name: alert.host_name.clone(),
-        terminal_ip: alert.terminal_ip.clone(),
-        user_account: alert.user_account.clone(),
-        terminal_os: alert.terminal_os.clone(),
-        dst_process_md5: alert.dst_process_md5.clone(),
-        dst_process_path: alert.dst_process_path.clone(),
-        dst_process_cli: alert.dst_process_cli.clone(),
-        src_process_md5: alert.src_process_md5.clone(),
-        src_process_path: alert.src_process_path.clone(),
-        src_process_cli: alert.src_process_cli.clone(),
-        register_key_name: alert.register_key_name.clone(),
-        register_key_value: alert.register_key_value.clone(),
-        register_path: alert.register_path.clone(),
-        file_name: alert.file_name.clone(),
-        file_md5: alert.file_md5.clone(),
-        file_path: alert.file_path.clone(),
-        data: alert.data.clone(),
-        created_at: None,
-    };
-    HostBehaviorRecord::insert(rb, &record).await?;
+pub async fn insert_host_behavior(pool: &PgPool, alert: &HostBehaviorAlert) -> Result<()> {
+    let procedure_technique_id = serde_json::Value::Array(
+        alert
+            .procedure_technique_id
+            .iter()
+            .cloned()
+            .map(serde_json::Value::String)
+            .collect(),
+    );
+
+    sqlx::query(
+        "INSERT INTO host_behavior_alerts (
+            alarm_id, alarm_date, alarm_severity, alarm_name, alarm_description,
+            alarm_type, alarm_subtype, source, control_rule_id, control_task_id,
+            procedure_technique_id, session_id, ip_version, src_ip, src_port,
+            dst_ip, dst_port, protocol, terminal_id, source_file_path,
+            host_name, terminal_ip, user_account, terminal_os,
+            dst_process_md5, dst_process_path, dst_process_cli,
+            src_process_md5, src_process_path, src_process_cli,
+            register_key_name, register_key_value, register_path,
+            file_name, file_md5, file_path, data
+        ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+            $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+            $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
+            $31, $32, $33, $34, $35, $36, $37
+        )"
+    )
+    .bind(&alert.alarm_id)
+    .bind(alert.alarm_date)
+    .bind(alert.alarm_severity as i16)
+    .bind(&alert.alarm_name)
+    .bind(&alert.alarm_description)
+    .bind(alert.alarm_type as i16)
+    .bind(alert.alarm_subtype as i32)
+    .bind(alert.source as i16)
+    .bind(&alert.control_rule_id)
+    .bind(&alert.control_task_id)
+    .bind(&procedure_technique_id)
+    .bind(&alert.session_id)
+    .bind(alert.ip_version.map(|v| v as i16))
+    .bind(&alert.src_ip)
+    .bind(alert.src_port.map(|v| v as i32))
+    .bind(&alert.dst_ip)
+    .bind(alert.dst_port.map(|v| v as i32))
+    .bind(&alert.protocol)
+    .bind(&alert.terminal_id)
+    .bind(&alert.source_file_path)
+    .bind(&alert.host_name)
+    .bind(&alert.terminal_ip)
+    .bind(&alert.user_account)
+    .bind(&alert.terminal_os)
+    .bind(&alert.dst_process_md5)
+    .bind(&alert.dst_process_path)
+    .bind(&alert.dst_process_cli)
+    .bind(&alert.src_process_md5)
+    .bind(&alert.src_process_path)
+    .bind(&alert.src_process_cli)
+    .bind(&alert.register_key_name)
+    .bind(&alert.register_key_value)
+    .bind(&alert.register_path)
+    .bind(&alert.file_name)
+    .bind(&alert.file_md5)
+    .bind(&alert.file_path)
+    .bind(&alert.data)
+    .execute(pool)
+    .await?;
+
     Ok(())
 }
 
 // 查询函数
-pub async fn query_network_attacks(rb: &RBatis, page: u64, page_size: u64) -> Result<(Vec<NetworkAttackRecord>, u64)> {
+pub async fn query_network_attacks(pool: &PgPool, page: u64, page_size: u64) -> Result<(Vec<NetworkAttackRecord>, u64)> {
     let offset = (page - 1) * page_size;
-    let sql = format!(
-        "SELECT * FROM network_attack_alerts ORDER BY created_at DESC LIMIT {} OFFSET {}",
-        page_size, offset
-    );
-    let records: Vec<NetworkAttackRecord> = rb.query_decode(&sql, vec![]).await?;
     
-    let count_sql = "SELECT COUNT(*) as count FROM network_attack_alerts";
-    let count: Option<i64> = rb.query_decode(count_sql, vec![]).await?;
-    let total = count.unwrap_or(0) as u64;
+    let records = sqlx::query_as::<_, NetworkAttackRecord>(
+        "SELECT * FROM network_attack_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+    )
+    .bind(page_size as i64)
+    .bind(offset as i64)
+    .fetch_all(pool)
+    .await?;
     
-    Ok((records, total))
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM network_attack_alerts")
+        .fetch_one(pool)
+        .await?;
+    
+    Ok((records, total.0 as u64))
 }
 
-pub async fn query_malicious_samples(rb: &RBatis, page: u64, page_size: u64) -> Result<(Vec<MaliciousSampleRecord>, u64)> {
+pub async fn query_malicious_samples(pool: &PgPool, page: u64, page_size: u64) -> Result<(Vec<MaliciousSampleRecord>, u64)> {
     let offset = (page - 1) * page_size;
-    let sql = format!(
-        "SELECT * FROM malicious_sample_alerts ORDER BY created_at DESC LIMIT {} OFFSET {}",
-        page_size, offset
-    );
-    let records: Vec<MaliciousSampleRecord> = rb.query_decode(&sql, vec![]).await?;
     
-    let count_sql = "SELECT COUNT(*) as count FROM malicious_sample_alerts";
-    let count: Option<i64> = rb.query_decode(count_sql, vec![]).await?;
-    let total = count.unwrap_or(0) as u64;
+    let records = sqlx::query_as::<_, MaliciousSampleRecord>(
+        "SELECT * FROM malicious_sample_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+    )
+    .bind(page_size as i64)
+    .bind(offset as i64)
+    .fetch_all(pool)
+    .await?;
     
-    Ok((records, total))
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM malicious_sample_alerts")
+        .fetch_one(pool)
+        .await?;
+    
+    Ok((records, total.0 as u64))
 }
 
-pub async fn query_host_behaviors(rb: &RBatis, page: u64, page_size: u64) -> Result<(Vec<HostBehaviorRecord>, u64)> {
+pub async fn query_host_behaviors(pool: &PgPool, page: u64, page_size: u64) -> Result<(Vec<HostBehaviorRecord>, u64)> {
     let offset = (page - 1) * page_size;
-    let sql = format!(
-        "SELECT * FROM host_behavior_alerts ORDER BY created_at DESC LIMIT {} OFFSET {}",
-        page_size, offset
-    );
-    let records: Vec<HostBehaviorRecord> = rb.query_decode(&sql, vec![]).await?;
     
-    let count_sql = "SELECT COUNT(*) as count FROM host_behavior_alerts";
-    let count: Option<i64> = rb.query_decode(count_sql, vec![]).await?;
-    let total = count.unwrap_or(0) as u64;
+    let records = sqlx::query_as::<_, HostBehaviorRecord>(
+        "SELECT * FROM host_behavior_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+    )
+    .bind(page_size as i64)
+    .bind(offset as i64)
+    .fetch_all(pool)
+    .await?;
     
-    Ok((records, total))
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM host_behavior_alerts")
+        .fetch_one(pool)
+        .await?;
+    
+    Ok((records, total.0 as u64))
+}
+
+pub async fn insert_invalid_alert(pool: &PgPool, data: serde_json::Value, error: String) -> Result<()> {
+    sqlx::query(
+        "INSERT INTO invalid_alerts (data, error) VALUES ($1, $2)"
+    )
+    .bind(&data)
+    .bind(&error)
+    .execute(pool)
+    .await?;
+    
+    Ok(())
+}
+
+pub async fn query_invalid_alerts(pool: &PgPool, page: u64, page_size: u64) -> Result<(Vec<InvalidAlertRecord>, u64)> {
+    let offset = (page - 1) * page_size;
+    
+    let records = sqlx::query_as::<_, InvalidAlertRecord>(
+        "SELECT * FROM invalid_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+    )
+    .bind(page_size as i64)
+    .bind(offset as i64)
+    .fetch_all(pool)
+    .await?;
+
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM invalid_alerts")
+        .fetch_one(pool)
+        .await?;
+
+    Ok((records, total.0 as u64))
 }

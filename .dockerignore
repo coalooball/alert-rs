@@ -1,0 +1,50 @@
+# Rust 构建产物
+target/
+**/*.rs.bk
+*.pdb
+
+# Cargo 缓存
+.cargo/
+
+# 前端构建和依赖
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
+
+# 临时文件
+*.tmp
+*.temp
+
+# 文档（可选，如果不需要在镜像中）
+*.md
+docs/
+
+# Docker 相关
+docker-compose/
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# 测试
+tests/
+benches/
+

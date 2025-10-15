@@ -1,14 +1,14 @@
 use anyhow::Result;
 use futures::StreamExt;
-use rbatis::RBatis;
+use sqlx::PgPool;
 use rdkafka::consumer::{Consumer, StreamConsumer};
 use rdkafka::{ClientConfig, Message};
 
 use crate::config::{KafkaConfig, TopicsConfig};
-use crate::db::{insert_host_behavior, insert_malicious_sample, insert_network_attack};
+use crate::db::{insert_host_behavior, insert_malicious_sample, insert_network_attack, insert_invalid_alert};
 use crate::models::{HostBehaviorAlert, MaliciousSampleAlert, NetworkAttackAlert};
 
-pub async fn run_consumer(kafka: KafkaConfig, topics: TopicsConfig, rb: RBatis) -> Result<()> {
+pub async fn run_consumer(kafka: KafkaConfig, topics: TopicsConfig, pool: PgPool) -> Result<()> {
     let consumer: StreamConsumer = ClientConfig::new()
         .set("bootstrap.servers", &kafka.brokers)
         .set("group.id", &kafka.group_id)
@@ -33,24 +33,54 @@ pub async fn run_consumer(kafka: KafkaConfig, topics: TopicsConfig, rb: RBatis) 
                     match payload {
                         Ok(text) => {
                             if topic == topics.network_attack {
-                                if let Ok(alert) = serde_json::from_str::<NetworkAttackAlert>(text)
-                                {
-                                    if let Err(e) = insert_network_attack(&rb, &alert).await {
-                                        tracing::error!("insert network_attack failed: {}", e);
+                                match serde_json::from_str::<NetworkAttackAlert>(text) {
+                                    Ok(alert) => {
+                                        if let Err(e) = insert_network_attack(&pool, &alert).await {
+                                            tracing::error!("insert network_attack failed: {}", e);
+                                        }
+                                    }
+                                    Err(e) => {
+                                        let data = serde_json::json!({
+                                            "topic": topic,
+                                            "raw": text,
+                                        });
+                                        if let Err(err) = insert_invalid_alert(&pool, data, e.to_string()).await {
+                                            tracing::error!("insert invalid_alert failed: {}", err);
+                                        }
                                     }
                                 }
                             } else if topic == topics.malicious_sample {
-                                if let Ok(alert) =
-                                    serde_json::from_str::<MaliciousSampleAlert>(text)
-                                {
-                                    if let Err(e) = insert_malicious_sample(&rb, &alert).await {
-                                        tracing::error!("insert malicious_sample failed: {}", e);
+                                match serde_json::from_str::<MaliciousSampleAlert>(text) {
+                                    Ok(alert) => {
+                                        if let Err(e) = insert_malicious_sample(&pool, &alert).await {
+                                            tracing::error!("insert malicious_sample failed: {}", e);
+                                        }
+                                    }
+                                    Err(e) => {
+                                        let data = serde_json::json!({
+                                            "topic": topic,
+                                            "raw": text,
+                                        });
+                                        if let Err(err) = insert_invalid_alert(&pool, data, e.to_string()).await {
+                                            tracing::error!("insert invalid_alert failed: {}", err);
+                                        }
                                     }
                                 }
                             } else if topic == topics.host_behavior {
-                                if let Ok(alert) = serde_json::from_str::<HostBehaviorAlert>(text) {
-                                    if let Err(e) = insert_host_behavior(&rb, &alert).await {
-                                        tracing::error!("insert host_behavior failed: {}", e);
+                                match serde_json::from_str::<HostBehaviorAlert>(text) {
+                                    Ok(alert) => {
+                                        if let Err(e) = insert_host_behavior(&pool, &alert).await {
+                                            tracing::error!("insert host_behavior failed: {}", e);
+                                        }
+                                    }
+                                    Err(e) => {
+                                        let data = serde_json::json!({
+                                            "topic": topic,
+                                            "raw": text,
+                                        });
+                                        if let Err(err) = insert_invalid_alert(&pool, data, e.to_string()).await {
+                                            tracing::error!("insert invalid_alert failed: {}", err);
+                                        }
                                     }
                                 }
                             }

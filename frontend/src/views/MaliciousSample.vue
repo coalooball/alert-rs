@@ -3,7 +3,7 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <h2>恶意样本告警</h2>
+          <h2>恶意样本</h2>
           <el-button type="primary" @click="loadData" :loading="loading">
             <el-icon><Refresh /></el-icon> 刷新
           </el-button>
@@ -14,6 +14,16 @@
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="alarm_id" label="告警ID" width="280" show-overflow-tooltip />
         <el-table-column prop="alarm_name" label="告警名称" width="200" show-overflow-tooltip />
+        <el-table-column prop="alarm_type" label="告警类型" width="150" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ getAlarmTypeName() }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="alarm_subtype" label="告警子类型" width="150" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ getAlarmSubtypeName(row.alarm_subtype) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="alarm_severity" label="严重等级" width="100" align="center">
           <template #default="{ row }">
             <el-tag :type="getSeverityType(row.alarm_severity)">
@@ -62,6 +72,8 @@
             {{ getSeverityText(currentRow.alarm_severity) }}
           </el-tag>
         </el-descriptions-item>
+        <el-descriptions-item label="告警类型">{{ getAlarmTypeName() }}</el-descriptions-item>
+        <el-descriptions-item label="告警子类型">{{ getAlarmSubtypeName(currentRow.alarm_subtype) }}</el-descriptions-item>
         <el-descriptions-item label="告警描述" :span="2">{{ currentRow.alarm_description }}</el-descriptions-item>
         
         <el-descriptions-item label="样本原始名称">{{ currentRow.sample_original_name }}</el-descriptions-item>
@@ -104,7 +116,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
-import { getMaliciousSamples } from '../api'
+import { getMaliciousSamples, getAlarmTypes } from '../api'
 import { ElMessage } from 'element-plus'
 
 const tableData = ref([])
@@ -114,6 +126,7 @@ const pageSize = ref(20)
 const total = ref(0)
 const dialogVisible = ref(false)
 const currentRow = ref(null)
+const alarmTypes = ref(null)
 
 const loadData = async () => {
   loading.value = true
@@ -168,7 +181,28 @@ const formatTimestamp = (timestamp) => {
   return new Date(timestamp).toLocaleString('zh-CN')
 }
 
-onMounted(() => {
+const getAlarmTypeName = () => {
+  return alarmTypes.value?.malicious_sample?.name || '恶意样本告警'
+}
+
+const getAlarmSubtypeName = (code) => {
+  if (!code || !alarmTypes.value) return code || '未知'
+  // 将数字补零到5位，例如 2001 -> "02001"
+  const codeStr = String(code).padStart(5, '0')
+  return alarmTypes.value.malicious_sample?.subtypes?.[codeStr] || code
+}
+
+const loadAlarmTypes = async () => {
+  try {
+    const response = await getAlarmTypes()
+    alarmTypes.value = response.data
+  } catch (error) {
+    console.error('加载告警类型失败:', error)
+  }
+}
+
+onMounted(async () => {
+  await loadAlarmTypes()
   loadData()
 })
 </script>

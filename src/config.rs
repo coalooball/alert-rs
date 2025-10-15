@@ -1,5 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct KafkaConfig {
@@ -30,11 +31,27 @@ pub struct PostgresConfig {
     pub password: String,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct AlarmTypeInfo {
+    pub code: String,
+    pub name: String,
+    pub category: String,
+    pub subtypes: HashMap<String, String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct AlarmTypesConfig {
+    pub network_attack: AlarmTypeInfo,
+    pub malicious_sample: AlarmTypeInfo,
+    pub host_behavior: AlarmTypeInfo,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct AppConfig {
     pub kafka: KafkaConfig,
     pub topics: TopicsConfig,
     pub postgres: PostgresConfig,
+    pub alarm_types: AlarmTypesConfig,
 }
 
 pub fn load_config<P: AsRef<Path>>(path: P) -> anyhow::Result<AppConfig> {

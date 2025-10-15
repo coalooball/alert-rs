@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import NetworkAttack from './views/NetworkAttack.vue'
 import MaliciousSample from './views/MaliciousSample.vue'
 import HostBehavior from './views/HostBehavior.vue'
+import InvalidAlert from './views/InvalidAlert.vue'
 
 const routes = [
   {
@@ -25,6 +26,13 @@ const routes = [
     name: 'HostBehavior',
     component: HostBehavior,
     meta: { title: '主机行为' }
+  }
+  ,
+  {
+    path: '/invalid-alert',
+    name: 'InvalidAlert',
+    component: InvalidAlert,
+    meta: { title: '无效告警' }
   }
 ]
 
