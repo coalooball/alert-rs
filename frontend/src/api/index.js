@@ -36,3 +36,12 @@ export const getAlarmTypes = () => {
   return api.get('/alarm-types')
 }
 
+export const getThreatEvents = (page = 1, pageSize = 20) => {
+  return api.get('/threat-events', {
+    params: { page, page_size: pageSize }
+  })
+}
+
+export const updateThreatEvent = (id, data) => {
+  return api.put(`/threat-events/${id}`, data)
+}

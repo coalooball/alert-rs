@@ -10,7 +10,29 @@
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <!-- 搜索表单 -->
+      <div class="search-form">
+        <el-form :inline="true" :model="searchForm">
+          <el-form-item label="样本名称">
+            <el-input v-model="searchForm.sample_name" placeholder="请输入样本名称" clearable style="width: 200px" />
+          </el-form-item>
+          <el-form-item label="文件类型">
+            <el-input v-model="searchForm.file_type" placeholder="请输入文件类型" clearable style="width: 120px" />
+          </el-form-item>
+          <el-form-item label="样本家族">
+            <el-input v-model="searchForm.sample_family" placeholder="请输入样本家族" clearable style="width: 150px" />
+          </el-form-item>
+          <el-form-item label="MD5">
+            <el-input v-model="searchForm.md5" placeholder="请输入MD5" clearable style="width: 280px" />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button @click="handleReset">重置</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <el-table :data="filteredTableData" v-loading="loading" stripe border style="width: 100%">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="alarm_severity" label="威胁等级" width="100" align="center">
           <template #default="{ row }">
@@ -150,6 +172,7 @@ import { getMaliciousSamples, getAlarmTypes } from '../api'
 import { ElMessage } from 'element-plus'
 
 const tableData = ref([])
+const filteredTableData = ref([])
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -157,6 +180,12 @@ const total = ref(0)
 const dialogVisible = ref(false)
 const currentRow = ref(null)
 const alarmTypes = ref(null)
+const searchForm = ref({
+  sample_name: '',
+  file_type: '',
+  sample_family: '',
+  md5: ''
+})
 
 const loadData = async () => {
   loading.value = true
@@ -164,11 +193,53 @@ const loadData = async () => {
     const response = await getMaliciousSamples(currentPage.value, pageSize.value)
     tableData.value = response.data.data
     total.value = response.data.total
+    applyFilter()
   } catch (error) {
     ElMessage.error('加载数据失败: ' + error.message)
   } finally {
     loading.value = false
   }
+}
+
+const applyFilter = () => {
+  let filtered = tableData.value
+  
+  if (searchForm.value.sample_name) {
+    filtered = filtered.filter(item => 
+      item.sample_original_name && item.sample_original_name.toLowerCase().includes(searchForm.value.sample_name.toLowerCase())
+    )
+  }
+  if (searchForm.value.file_type) {
+    filtered = filtered.filter(item => 
+      item.file_type && item.file_type.toLowerCase().includes(searchForm.value.file_type.toLowerCase())
+    )
+  }
+  if (searchForm.value.sample_family) {
+    filtered = filtered.filter(item => 
+      item.sample_family && item.sample_family.toLowerCase().includes(searchForm.value.sample_family.toLowerCase())
+    )
+  }
+  if (searchForm.value.md5) {
+    filtered = filtered.filter(item => 
+      item.md5 && item.md5.toLowerCase().includes(searchForm.value.md5.toLowerCase())
+    )
+  }
+  
+  filteredTableData.value = filtered
+}
+
+const handleSearch = () => {
+  applyFilter()
+}
+
+const handleReset = () => {
+  searchForm.value = {
+    sample_name: '',
+    file_type: '',
+    sample_family: '',
+    md5: ''
+  }
+  applyFilter()
 }
 
 const handleSizeChange = () => {
@@ -261,6 +332,13 @@ onMounted(async () => {
 
 .card-header h2 {
   margin: 0;
+}
+
+.search-form {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
 }
 
 .pagination {

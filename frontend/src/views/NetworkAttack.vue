@@ -10,7 +10,32 @@
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <!-- 搜索表单 -->
+      <div class="search-form">
+        <el-form :inline="true" :model="searchForm">
+          <el-form-item label="源IP">
+            <el-input v-model="searchForm.src_ip" placeholder="请输入源IP" clearable style="width: 150px" />
+          </el-form-item>
+          <el-form-item label="源端口">
+            <el-input v-model="searchForm.src_port" placeholder="请输入源端口" clearable style="width: 120px" />
+          </el-form-item>
+          <el-form-item label="目标IP">
+            <el-input v-model="searchForm.dst_ip" placeholder="请输入目标IP" clearable style="width: 150px" />
+          </el-form-item>
+          <el-form-item label="目标端口">
+            <el-input v-model="searchForm.dst_port" placeholder="请输入目标端口" clearable style="width: 120px" />
+          </el-form-item>
+          <el-form-item label="协议">
+            <el-input v-model="searchForm.protocol" placeholder="请输入协议" clearable style="width: 100px" />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button @click="handleReset">重置</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <el-table :data="filteredTableData" v-loading="loading" stripe border style="width: 100%">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="alarm_severity" label="威胁等级" width="100" align="center">
           <template #default="{ row }">
@@ -118,6 +143,7 @@ import { getNetworkAttacks, getAlarmTypes } from '../api'
 import { ElMessage } from 'element-plus'
 
 const tableData = ref([])
+const filteredTableData = ref([])
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -125,6 +151,13 @@ const total = ref(0)
 const dialogVisible = ref(false)
 const currentRow = ref(null)
 const alarmTypes = ref(null)
+const searchForm = ref({
+  src_ip: '',
+  src_port: '',
+  dst_ip: '',
+  dst_port: '',
+  protocol: ''
+})
 
 const loadData = async () => {
   loading.value = true
@@ -132,11 +165,59 @@ const loadData = async () => {
     const response = await getNetworkAttacks(currentPage.value, pageSize.value)
     tableData.value = response.data.data
     total.value = response.data.total
+    applyFilter()
   } catch (error) {
     ElMessage.error('加载数据失败: ' + error.message)
   } finally {
     loading.value = false
   }
+}
+
+const applyFilter = () => {
+  let filtered = tableData.value
+  
+  if (searchForm.value.src_ip) {
+    filtered = filtered.filter(item => 
+      item.src_ip && item.src_ip.includes(searchForm.value.src_ip)
+    )
+  }
+  if (searchForm.value.src_port) {
+    filtered = filtered.filter(item => 
+      item.src_port && String(item.src_port).includes(searchForm.value.src_port)
+    )
+  }
+  if (searchForm.value.dst_ip) {
+    filtered = filtered.filter(item => 
+      item.dst_ip && item.dst_ip.includes(searchForm.value.dst_ip)
+    )
+  }
+  if (searchForm.value.dst_port) {
+    filtered = filtered.filter(item => 
+      item.dst_port && String(item.dst_port).includes(searchForm.value.dst_port)
+    )
+  }
+  if (searchForm.value.protocol) {
+    filtered = filtered.filter(item => 
+      item.protocol && item.protocol.toLowerCase().includes(searchForm.value.protocol.toLowerCase())
+    )
+  }
+  
+  filteredTableData.value = filtered
+}
+
+const handleSearch = () => {
+  applyFilter()
+}
+
+const handleReset = () => {
+  searchForm.value = {
+    src_ip: '',
+    src_port: '',
+    dst_ip: '',
+    dst_port: '',
+    protocol: ''
+  }
+  applyFilter()
 }
 
 const handleSizeChange = () => {
@@ -216,6 +297,13 @@ onMounted(async () => {
 
 .card-header h2 {
   margin: 0;
+}
+
+.search-form {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
 }
 
 .pagination {

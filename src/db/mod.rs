@@ -1,3 +1,6 @@
+pub mod threat_event;
+pub mod mock_threat_events;
+
 use anyhow::Result;
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use uuid::Uuid;
@@ -5,6 +8,8 @@ use chrono::{DateTime, Utc};
 
 use crate::config::PostgresConfig;
 use crate::models::{HostBehaviorAlert, MaliciousSampleAlert, NetworkAttackAlert};
+
+pub use threat_event::{ThreatEventRecord, ThreatEventInput};
 
 pub async fn init_postgres(pg: &PostgresConfig) -> Result<PgPool> {
     let dsn = format!(
@@ -172,6 +177,9 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<PgPool> {
     .execute(&pool)
     .await?;
 
+    // 威胁事件表
+    threat_event::create_threat_event_table(&pool).await?;
+
     Ok(pool)
 }
 
@@ -189,6 +197,7 @@ pub async fn reset_database(pool: &PgPool) -> Result<()> {
     sqlx::query("DROP TABLE IF EXISTS invalid_alerts CASCADE")
         .execute(pool)
         .await?;
+    threat_event::drop_threat_event_table(pool).await?;
     Ok(())
 }
 

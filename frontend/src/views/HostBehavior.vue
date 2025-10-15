@@ -10,7 +10,29 @@
         </div>
       </template>
 
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
+      <!-- 搜索表单 -->
+      <div class="search-form">
+        <el-form :inline="true" :model="searchForm">
+          <el-form-item label="主机名">
+            <el-input v-model="searchForm.host_name" placeholder="请输入主机名" clearable style="width: 180px" />
+          </el-form-item>
+          <el-form-item label="终端IP">
+            <el-input v-model="searchForm.terminal_ip" placeholder="请输入终端IP" clearable style="width: 150px" />
+          </el-form-item>
+          <el-form-item label="用户账号">
+            <el-input v-model="searchForm.user_account" placeholder="请输入用户账号" clearable style="width: 150px" />
+          </el-form-item>
+          <el-form-item label="操作系统">
+            <el-input v-model="searchForm.terminal_os" placeholder="请输入操作系统" clearable style="width: 150px" />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button @click="handleReset">重置</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <el-table :data="filteredTableData" v-loading="loading" stripe border style="width: 100%">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="alarm_severity" label="威胁等级" width="100" align="center">
           <template #default="{ row }">
@@ -139,6 +161,7 @@ import { getHostBehaviors, getAlarmTypes } from '../api'
 import { ElMessage } from 'element-plus'
 
 const tableData = ref([])
+const filteredTableData = ref([])
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -146,6 +169,12 @@ const total = ref(0)
 const dialogVisible = ref(false)
 const currentRow = ref(null)
 const alarmTypes = ref(null)
+const searchForm = ref({
+  host_name: '',
+  terminal_ip: '',
+  user_account: '',
+  terminal_os: ''
+})
 
 const loadData = async () => {
   loading.value = true
@@ -153,11 +182,53 @@ const loadData = async () => {
     const response = await getHostBehaviors(currentPage.value, pageSize.value)
     tableData.value = response.data.data
     total.value = response.data.total
+    applyFilter()
   } catch (error) {
     ElMessage.error('加载数据失败: ' + error.message)
   } finally {
     loading.value = false
   }
+}
+
+const applyFilter = () => {
+  let filtered = tableData.value
+  
+  if (searchForm.value.host_name) {
+    filtered = filtered.filter(item => 
+      item.host_name && item.host_name.toLowerCase().includes(searchForm.value.host_name.toLowerCase())
+    )
+  }
+  if (searchForm.value.terminal_ip) {
+    filtered = filtered.filter(item => 
+      item.terminal_ip && item.terminal_ip.includes(searchForm.value.terminal_ip)
+    )
+  }
+  if (searchForm.value.user_account) {
+    filtered = filtered.filter(item => 
+      item.user_account && item.user_account.toLowerCase().includes(searchForm.value.user_account.toLowerCase())
+    )
+  }
+  if (searchForm.value.terminal_os) {
+    filtered = filtered.filter(item => 
+      item.terminal_os && item.terminal_os.toLowerCase().includes(searchForm.value.terminal_os.toLowerCase())
+    )
+  }
+  
+  filteredTableData.value = filtered
+}
+
+const handleSearch = () => {
+  applyFilter()
+}
+
+const handleReset = () => {
+  searchForm.value = {
+    host_name: '',
+    terminal_ip: '',
+    user_account: '',
+    terminal_os: ''
+  }
+  applyFilter()
 }
 
 const handleSizeChange = () => {
@@ -237,6 +308,13 @@ onMounted(async () => {
 
 .card-header h2 {
   margin: 0;
+}
+
+.search-form {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
 }
 
 .pagination {
