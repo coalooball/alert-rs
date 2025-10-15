@@ -3,11 +3,18 @@ import NetworkAttack from './views/NetworkAttack.vue'
 import MaliciousSample from './views/MaliciousSample.vue'
 import HostBehavior from './views/HostBehavior.vue'
 import InvalidAlert from './views/InvalidAlert.vue'
+import AllAlerts from './views/AllAlerts.vue'
 
 const routes = [
   {
     path: '/',
-    redirect: '/network-attack'
+    redirect: '/all'
+  },
+  {
+    path: '/all',
+    name: 'AllAlerts',
+    component: AllAlerts,
+    meta: { title: '所有告警', standalone: true }
   },
   {
     path: '/network-attack',
@@ -26,8 +33,7 @@ const routes = [
     name: 'HostBehavior',
     component: HostBehavior,
     meta: { title: '主机行为' }
-  }
-  ,
+  },
   {
     path: '/invalid-alert',
     name: 'InvalidAlert',

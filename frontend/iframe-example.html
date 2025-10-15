@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>告警系统 - iframe 嵌入示例</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .controls {
+            background: white;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #409EFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #66b1ff;
+        }
+
+        button.active {
+            background-color: #67C23A;
+        }
+
+        .info {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f0f9ff;
+            border-left: 4px solid #409EFF;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .iframe-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            height: calc(100vh - 220px);
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            font-size: 16px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔔 告警系统 - iframe 嵌入示例</h1>
+        
+        <div class="controls">
+            <div class="button-group">
+                <button onclick="loadTab('all')">所有告警（默认）</button>
+                <button onclick="loadTab('network-attack')">精控流量</button>
+                <button onclick="loadTab('malicious-sample')">恶意样本</button>
+                <button onclick="loadTab('host-behavior')">终端日志</button>
+                <button onclick="loadTab('invalid-alert')">无效告警</button>
+            </div>
+            <div class="info">
+                <strong>当前 URL：</strong> <span id="current-url">http://localhost:5173/all</span>
+            </div>
+            <div class="info">
+                <strong>说明：</strong> 点击上方按钮切换不同的 Tab 视图。此示例演示了如何在其他系统中嵌入告警系统页面。
+            </div>
+        </div>
+
+        <div class="iframe-container">
+            <iframe 
+                id="alert-iframe"
+                src="http://localhost:5173/all"
+                allow="fullscreen"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                title="告警系统">
+            </iframe>
+        </div>
+    </div>
+
+    <script>
+        // 切换 Tab
+        function loadTab(tab) {
+            const iframe = document.getElementById('alert-iframe');
+            const urlDisplay = document.getElementById('current-url');
+            
+            let url;
+            if (tab === 'all') {
+                url = 'http://localhost:5173/all';
+            } else {
+                url = `http://localhost:5173/all?tab=${tab}`;
+            }
+            
+            iframe.src = url;
+            urlDisplay.textContent = url;
+            
+            // 更新按钮状态
+            document.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // 监听 iframe 加载状态
+        const iframe = document.getElementById('alert-iframe');
+        iframe.addEventListener('load', function() {
+            console.log('告警系统页面已加载');
+        });
+
+        iframe.addEventListener('error', function() {
+            console.error('告警系统页面加载失败，请确保开发服务器正在运行');
+        });
+
+        // 页面加载时设置默认按钮为激活状态
+        window.addEventListener('load', function() {
+            document.querySelector('button').classList.add('active');
+        });
+    </script>
+</body>
+</html>
+

@@ -13,7 +13,7 @@
       </el-header>
 
       <!-- Tab 导航栏 -->
-      <el-header style="background-color: #fff; border-bottom: 1px solid #e6e6e6; height: auto; padding: 0;">
+      <el-header v-if="!route.meta.standalone" style="background-color: #fff; border-bottom: 1px solid #e6e6e6; height: auto; padding: 0;">
         <el-tabs v-model="activeTab" @tab-click="handleTabClick" class="custom-tabs">
           <el-tab-pane label="网络攻击" name="/network-attack"></el-tab-pane>
           <el-tab-pane label="恶意样本" name="/malicious-sample"></el-tab-pane>

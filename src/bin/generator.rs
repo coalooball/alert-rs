@@ -176,7 +176,7 @@ async fn generate_network_attacks(
     let mut sent = 0;
     loop {
         let alert = generators::generate_network_attack_alert();
-        println!("📤 发送: {} - {}", alert.alarm_id, alert.alarm_name);
+        println!("📤 发送: {} - {}", alert.alarm_id.as_ref().unwrap(), alert.alarm_name.as_ref().unwrap());
 
         let payload = serde_json::to_vec(&alert)?;
         let delivery = producer
@@ -232,7 +232,7 @@ async fn generate_malicious_samples(
     let mut sent = 0;
     loop {
         let alert = generators::generate_malicious_sample_alert();
-        println!("📤 发送: {} - {}", alert.alarm_id, alert.alarm_name);
+        println!("📤 发送: {} - {}", alert.alarm_id.as_ref().unwrap(), alert.alarm_name.as_ref().unwrap());
 
         let payload = serde_json::to_vec(&alert)?;
         let delivery = producer
@@ -288,7 +288,7 @@ async fn generate_host_behaviors(
     let mut sent = 0;
     loop {
         let alert = generators::generate_host_behavior_alert();
-        println!("📤 发送: {} - {}", alert.alarm_id, alert.alarm_name);
+        println!("📤 发送: {} - {}", alert.alarm_id.as_ref().unwrap(), alert.alarm_name.as_ref().unwrap());
 
         let payload = serde_json::to_vec(&alert)?;
         let delivery = producer
@@ -349,7 +349,7 @@ async fn generate_all_types(
         match alert_type {
             0 => {
                 let alert = generators::generate_network_attack_alert();
-                println!("📤 [网络攻击] {}: {}", alert.alarm_id, alert.alarm_name);
+                println!("📤 [网络攻击] {}: {}", alert.alarm_id.as_ref().unwrap(), alert.alarm_name.as_ref().unwrap());
                 let payload = serde_json::to_vec(&alert)?;
                 let res = producer
                     .send(
@@ -363,7 +363,7 @@ async fn generate_all_types(
             }
             1 => {
                 let alert = generators::generate_malicious_sample_alert();
-                println!("📤 [恶意样本] {}: {}", alert.alarm_id, alert.alarm_name);
+                println!("📤 [恶意样本] {}: {}", alert.alarm_id.as_ref().unwrap(), alert.alarm_name.as_ref().unwrap());
                 let payload = serde_json::to_vec(&alert)?;
                 let res = producer
                     .send(
@@ -377,7 +377,7 @@ async fn generate_all_types(
             }
             _ => {
                 let alert = generators::generate_host_behavior_alert();
-                println!("📤 [主机行为] {}: {}", alert.alarm_id, alert.alarm_name);
+                println!("📤 [主机行为] {}: {}", alert.alarm_id.as_ref().unwrap(), alert.alarm_name.as_ref().unwrap());
                 let payload = serde_json::to_vec(&alert)?;
                 let res = producer
                     .send(
@@ -416,9 +416,9 @@ async fn generate_once(
         "network" => {
             let alert = generators::generate_network_attack_alert();
             println!("📤 发送网络攻击告警:");
-            println!("   ID: {}", alert.alarm_id);
-            println!("   名称: {}", alert.alarm_name);
-            println!("   严重程度: {}", alert.alarm_severity);
+            println!("   ID: {}", alert.alarm_id.as_ref().unwrap());
+            println!("   名称: {}", alert.alarm_name.as_ref().unwrap());
+            println!("   严重程度: {}", alert.alarm_severity.unwrap());
 
             let payload = serde_json::to_vec(&alert)?;
             let res = producer
@@ -441,9 +441,9 @@ async fn generate_once(
         "sample" => {
             let alert = generators::generate_malicious_sample_alert();
             println!("📤 发送恶意样本告警:");
-            println!("   ID: {}", alert.alarm_id);
-            println!("   名称: {}", alert.alarm_name);
-            println!("   家族: {}", alert.sample_family);
+            println!("   ID: {}", alert.alarm_id.as_ref().unwrap());
+            println!("   名称: {}", alert.alarm_name.as_ref().unwrap());
+            println!("   家族: {}", alert.sample_family.as_ref().unwrap());
 
             let payload = serde_json::to_vec(&alert)?;
             let res = producer
@@ -466,9 +466,9 @@ async fn generate_once(
         "host" => {
             let alert = generators::generate_host_behavior_alert();
             println!("📤 发送主机行为告警:");
-            println!("   ID: {}", alert.alarm_id);
-            println!("   名称: {}", alert.alarm_name);
-            println!("   主机: {}", alert.host_name);
+            println!("   ID: {}", alert.alarm_id.as_ref().unwrap());
+            println!("   名称: {}", alert.alarm_name.as_ref().unwrap());
+            println!("   主机: {}", alert.host_name.as_ref().unwrap());
 
             let payload = serde_json::to_vec(&alert)?;
             let res = producer

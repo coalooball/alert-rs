@@ -56,64 +56,64 @@ pub fn generate_network_attack_alert() -> NetworkAttackAlert {
     ];
 
     NetworkAttackAlert {
-        alarm_id: id,
-        alarm_date: timestamp,
-        alarm_severity: severity,
-        alarm_name: name.to_string(),
-        alarm_description: desc.to_string(),
+        alarm_id: Some(id),
+        alarm_date: Some(timestamp),
+        alarm_severity: Some(severity),
+        alarm_name: Some(name.to_string()),
+        alarm_description: Some(desc.to_string()),
         alarm_type: 1,
         alarm_subtype: subtype,
         source: rng.gen_range(1..=4),
-        control_rule_id: format!(
+        control_rule_id: Some(format!(
             "RULE-{}-2024-{:03}",
             if apt.is_empty() { "SEC" } else { "APT" },
             rng.gen_range(1..999)
-        ),
-        control_task_id: format!("TASK-SEC-2024-{:03}", rng.gen_range(100..999)),
-        procedure_technique_id: vec!["T1071.001".to_string(), "T1573.001".to_string()],
-        session_id: format!(
+        )),
+        control_task_id: Some(format!("TASK-SEC-2024-{:03}", rng.gen_range(100..999))),
+        procedure_technique_id: Some(vec!["T1071.001".to_string(), "T1573.001".to_string()]),
+        session_id: Some(format!(
             "SESSION-{}-{:06}",
             Utc::now().format("%Y%m%d"),
             rng.gen::<u32>() % 999999
-        ),
-        ip_version: 4,
-        src_ip: src_ips[rng.gen_range(0..src_ips.len())].to_string(),
-        src_port: rng.gen_range(30000..60000),
-        dst_ip: dst_ips[rng.gen_range(0..dst_ips.len())].to_string(),
-        dst_port: if subtype == 1003 { 80 } else { 443 },
-        protocol: "HTTPS".to_string(),
-        terminal_id: format!("TERM-OFFICE-PC-{:03}", rng.gen_range(1..100)),
-        source_file_path: format!(
+        )),
+        ip_version: Some(4),
+        src_ip: Some(src_ips[rng.gen_range(0..src_ips.len())].to_string()),
+        src_port: Some(rng.gen_range(30000..60000)),
+        dst_ip: Some(dst_ips[rng.gen_range(0..dst_ips.len())].to_string()),
+        dst_port: Some(if subtype == 1003 { 80 } else { 443 }),
+        protocol: Some("HTTPS".to_string()),
+        terminal_id: Some(format!("TERM-OFFICE-PC-{:03}", rng.gen_range(1..100))),
+        source_file_path: Some(format!(
             "/data/traffic/2024/12/25/capture_{}.pcap",
             timestamp % 999999
-        ),
-        signature_id: format!(
+        )),
+        signature_id: Some(format!(
             "SIG-{}-{:03}",
             if apt.is_empty() { "ATK" } else { "APT" },
             rng.gen_range(1..999)
-        ),
-        attack_payload: format!(
+        )),
+        attack_payload: Some(format!(
             r#"{{"method":"GET","uri":"/api/data?id={}"}}"#,
             rng.gen::<u32>()
-        ),
-        attack_stage: "Command and Control".to_string(),
-        attack_ip: dst_ips[rng.gen_range(0..dst_ips.len())].to_string(),
-        attacked_ip: src_ips[rng.gen_range(0..src_ips.len())].to_string(),
-        apt_group: apt.to_string(),
+        )),
+        attack_stage: Some("Command and Control".to_string()),
+        attack_ip: Some(dst_ips[rng.gen_range(0..dst_ips.len())].to_string()),
+        attacked_ip: Some(src_ips[rng.gen_range(0..src_ips.len())].to_string()),
+        apt_group: Some(apt.to_string()),
         vul_type: if subtype == 1003 {
-            "SQL注入".to_string()
+            Some("SQL注入".to_string())
         } else {
-            String::new()
+            Some(String::new())
         },
         cve_id: if subtype == 1003 {
-            format!("CVE-2024-{}", rng.gen_range(1000..9999))
+            Some(format!("CVE-2024-{}", rng.gen_range(1000..9999)))
         } else {
-            String::new()
+            Some(String::new())
         },
         vul_desc: if subtype == 1003 {
-            "应用程序未对用户输入进行适当验证".to_string()
+            Some("应用程序未对用户输入进行适当验证".to_string())
         } else {
-            String::new()
+            Some(String::new())
         },
         data: None,
     }
@@ -171,50 +171,50 @@ pub fn generate_malicious_sample_alert() -> MaliciousSampleAlert {
     );
 
     MaliciousSampleAlert {
-        alarm_id: id,
-        alarm_date: timestamp,
-        alarm_severity: severity,
-        alarm_name: name.to_string(),
-        alarm_description: desc.to_string(),
+        alarm_id: Some(id),
+        alarm_date: Some(timestamp),
+        alarm_severity: Some(severity),
+        alarm_name: Some(name.to_string()),
+        alarm_description: Some(desc.to_string()),
         alarm_type: 2,
         alarm_subtype: subtype,
         source: rng.gen_range(1..=4),
-        control_rule_id: format!("RULE-{}-2024-{:03}", type_name, rng.gen_range(1..999)),
-        control_task_id: format!("TASK-MAL-2024-{:03}", rng.gen_range(100..999)),
-        procedure_technique_id: vec!["T1055".to_string(), "T1566.001".to_string()],
-        session_id: String::new(),
+        control_rule_id: Some(format!("RULE-{}-2024-{:03}", type_name, rng.gen_range(1..999))),
+        control_task_id: Some(format!("TASK-MAL-2024-{:03}", rng.gen_range(100..999))),
+        procedure_technique_id: Some(vec!["T1055".to_string(), "T1566.001".to_string()]),
+        session_id: Some(String::new()),
         ip_version: Some(4),
-        src_ip: String::new(),
+        src_ip: Some(String::new()),
         src_port: None,
-        dst_ip: String::new(),
+        dst_ip: Some(String::new()),
         dst_port: None,
-        protocol: String::new(),
-        terminal_id: format!("TERM-FIN-PC-{:03}", rng.gen_range(1..100)),
-        source_file_path: format!("/data/samples/2024/12/25/sample_{}.exe", timestamp % 999999),
-        sample_source: rng.gen_range(1..=3),
-        md5: format!("{:032x}", rng.gen::<u128>()),
-        sha1: format!("{:040x}", rng.gen::<u128>() as u128),
-        sha256: format!("{:064x}", rng.gen::<u128>() as u128),
-        sha512: format!("{:0128x}", rng.gen::<u128>() as u128),
-        ssdeep: format!("96:{}:S{}", rng.gen::<u64>(), rng.gen::<u32>()),
-        sample_original_name: format!("{}.exe", family.to_lowercase()),
-        sample_description: String::new(),
-        sample_family: family.to_string(),
-        apt_group: if family == "CobaltStrike" {
+        protocol: Some(String::new()),
+        terminal_id: Some(format!("TERM-FIN-PC-{:03}", rng.gen_range(1..100))),
+        source_file_path: Some(format!("/data/samples/2024/12/25/sample_{}.exe", timestamp % 999999)),
+        sample_source: Some(rng.gen_range(1..=3)),
+        md5: Some(format!("{:032x}", rng.gen::<u128>())),
+        sha1: Some(format!("{:040x}", rng.gen::<u128>() as u128)),
+        sha256: Some(format!("{:064x}", rng.gen::<u128>() as u128)),
+        sha512: Some(format!("{:0128x}", rng.gen::<u128>() as u128)),
+        ssdeep: Some(format!("96:{}:S{}", rng.gen::<u64>(), rng.gen::<u32>())),
+        sample_original_name: Some(format!("{}.exe", family.to_lowercase())),
+        sample_description: Some(String::new()),
+        sample_family: Some(family.to_string()),
+        apt_group: Some(if family == "CobaltStrike" {
             "APT29".to_string()
         } else {
             String::new()
-        },
-        sample_alarm_engine: vec![1, 2],
-        target_platform: "Windows x64".to_string(),
-        file_type: "PE32+ executable".to_string(),
-        file_size: rng.gen_range(100000..5000000),
-        language: "C++".to_string(),
-        rule: format!("YARA:{}_{}", family, type_name),
-        target_content: String::new(),
-        compile_date: timestamp - rng.gen_range(86400000..31536000000),
-        last_analy_date: timestamp,
-        sample_alarm_detail: format!(r#"[{{"rule_name":"{}_{}_2024"}}]"#, family, type_name),
+        }),
+        sample_alarm_engine: Some(vec![1, 2]),
+        target_platform: Some("Windows x64".to_string()),
+        file_type: Some("PE32+ executable".to_string()),
+        file_size: Some(rng.gen_range(100000..5000000)),
+        language: Some("C++".to_string()),
+        rule: Some(format!("YARA:{}_{}", family, type_name)),
+        target_content: Some(String::new()),
+        compile_date: Some(timestamp - rng.gen_range(86400000..31536000000)),
+        last_analy_date: Some(timestamp),
+        sample_alarm_detail: Some(format!(r#"[{{"rule_name":"{}_{}_2024"}}]"#, family, type_name)),
         data: None,
     }
 }
@@ -284,82 +284,82 @@ pub fn generate_host_behavior_alert() -> HostBehaviorAlert {
     ];
 
     HostBehaviorAlert {
-        alarm_id: id,
-        alarm_date: timestamp,
-        alarm_severity: severity,
-        alarm_name: name.to_string(),
-        alarm_description: desc.to_string(),
+        alarm_id: Some(id),
+        alarm_date: Some(timestamp),
+        alarm_severity: Some(severity),
+        alarm_name: Some(name.to_string()),
+        alarm_description: Some(desc.to_string()),
         alarm_type: 3,
         alarm_subtype: subtype,
         source: rng.gen_range(3..=8),
-        control_rule_id: format!(
+        control_rule_id: Some(format!(
             "RULE-{}-2024-{:03}",
             attack_type.to_uppercase(),
             rng.gen_range(1..999)
-        ),
-        control_task_id: format!("TASK-HOST-2024-{:03}", rng.gen_range(100..999)),
-        procedure_technique_id: vec!["T1496".to_string()],
-        session_id: String::new(),
+        )),
+        control_task_id: Some(format!("TASK-HOST-2024-{:03}", rng.gen_range(100..999))),
+        procedure_technique_id: Some(vec!["T1496".to_string()]),
+        session_id: Some(String::new()),
         ip_version: Some(4),
-        src_ip: String::new(),
+        src_ip: Some(String::new()),
         src_port: None,
-        dst_ip: if subtype == 3001 {
+        dst_ip: Some(if subtype == 3001 {
             "pool.minexmr.com".to_string()
         } else {
             String::new()
-        },
+        }),
         dst_port: if subtype == 3001 { Some(4444) } else { None },
-        protocol: if subtype == 3001 {
+        protocol: Some(if subtype == 3001 {
             "TCP".to_string()
         } else {
             String::new()
-        },
-        terminal_id: format!("TERM-SVR-{:03}", rng.gen_range(1..100)),
-        source_file_path: format!("/data/logs/2024/12/25/host_{}.log", timestamp % 999999),
-        host_name: hostnames[rng.gen_range(0..hostnames.len())].to_string(),
-        terminal_ip: ips[rng.gen_range(0..ips.len())].to_string(),
-        user_account: if subtype == 3001 {
+        }),
+        terminal_id: Some(format!("TERM-SVR-{:03}", rng.gen_range(1..100))),
+        source_file_path: Some(format!("/data/logs/2024/12/25/host_{}.log", timestamp % 999999)),
+        host_name: Some(hostnames[rng.gen_range(0..hostnames.len())].to_string()),
+        terminal_ip: Some(ips[rng.gen_range(0..ips.len())].to_string()),
+        user_account: Some(if subtype == 3001 {
             "www-data".to_string()
         } else {
             "admin".to_string()
-        },
-        terminal_os: if process_path.starts_with('/') {
+        }),
+        terminal_os: Some(if process_path.starts_with('/') {
             "Ubuntu 20.04.3 LTS".to_string()
         } else {
             "Windows 10 Pro".to_string()
-        },
-        dst_process_md5: format!("{:032x}", rng.gen::<u128>()),
-        dst_process_path: process_path.to_string(),
-        dst_process_cli: format!("{} --param value", process_path),
-        src_process_md5: format!("{:032x}", rng.gen::<u128>()),
-        src_process_path: if process_path.starts_with('/') {
+        }),
+        dst_process_md5: Some(format!("{:032x}", rng.gen::<u128>())),
+        dst_process_path: Some(process_path.to_string()),
+        dst_process_cli: Some(format!("{} --param value", process_path)),
+        src_process_md5: Some(format!("{:032x}", rng.gen::<u128>())),
+        src_process_path: Some(if process_path.starts_with('/') {
             "/usr/sbin/apache2".to_string()
         } else {
             "C:\\Windows\\System32\\explorer.exe".to_string()
-        },
-        src_process_cli: String::new(),
-        register_key_name: if !process_path.starts_with('/') {
+        }),
+        src_process_cli: Some(String::new()),
+        register_key_name: Some(if !process_path.starts_with('/') {
             "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run".to_string()
         } else {
             String::new()
-        },
-        register_key_value: if !process_path.starts_with('/') {
+        }),
+        register_key_value: Some(if !process_path.starts_with('/') {
             process_path.to_string()
         } else {
             String::new()
-        },
-        register_path: if !process_path.starts_with('/') {
+        }),
+        register_path: Some(if !process_path.starts_with('/') {
             "HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run".to_string()
         } else {
             String::new()
-        },
-        file_name: if subtype == 3001 {
+        }),
+        file_name: Some(if subtype == 3001 {
             "xmrig".to_string()
         } else {
             "suspicious.exe".to_string()
-        },
-        file_md5: format!("{:032x}", rng.gen::<u128>()),
-        file_path: process_path.to_string(),
+        }),
+        file_md5: Some(format!("{:032x}", rng.gen::<u128>())),
+        file_path: Some(process_path.to_string()),
         data: None,
     }
 }

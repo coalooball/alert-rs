@@ -91,13 +91,13 @@ async fn main() {
         .route("/api/alarm-types", get(get_alarm_types))
         .with_state(app_state);
 
-    // 静态文件服务 - 为 SPA 路由提供 index.html fallback
+    // 静态文件服务
     let serve_dir = ServeDir::new("frontend/dist");
 
     // 合并路由
     let app = Router::new()
         .merge(api_routes)
-        .nest_service("/", serve_dir)
+        .fallback_service(serve_dir)
         .layer(cors);
 
     // 服务器地址
@@ -108,8 +108,16 @@ async fn main() {
     println!("╚══════════════════════════════════════════════════════════╝");
     println!();
     println!("🌐 访问地址:");
-    println!("   👉 前端界面: http://localhost:3000");
+    println!("   👉 前端界面（统一视图）: http://localhost:3000/all");
+    println!("   👉 前端界面（独立页面）: http://localhost:3000");
     println!("   👉 API 接口: http://localhost:3000/api/*");
+    println!();
+    println!("📊 可用路由:");
+    println!("   • /all                - 统一 Tab 视图（支持 iframe 嵌套）");
+    println!("   • /network-attack     - 精控流量");
+    println!("   • /malicious-sample   - 恶意样本");
+    println!("   • /host-behavior      - 终端日志");
+    println!("   • /invalid-alert      - 无效告警");
     println!();
     println!("📥 当前未开放 HTTP 数据接收端点（已切换为 Kafka 通道）");
     println!();

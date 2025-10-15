@@ -26,35 +26,35 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<PgPool> {
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS network_attack_alerts (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-            alarm_id TEXT NOT NULL,
-            alarm_date BIGINT NOT NULL,
-            alarm_severity SMALLINT NOT NULL,
-            alarm_name TEXT NOT NULL,
-            alarm_description TEXT NOT NULL,
+            alarm_id TEXT,
+            alarm_date BIGINT,
+            alarm_severity SMALLINT,
+            alarm_name TEXT,
+            alarm_description TEXT,
             alarm_type SMALLINT NOT NULL,
             alarm_subtype INTEGER NOT NULL,
             source SMALLINT NOT NULL,
-            control_rule_id TEXT NOT NULL,
-            control_task_id TEXT NOT NULL,
-            procedure_technique_id JSONB NOT NULL,
-            session_id TEXT NOT NULL,
-            ip_version SMALLINT NOT NULL,
-            src_ip TEXT NOT NULL,
-            src_port INTEGER NOT NULL,
-            dst_ip TEXT NOT NULL,
-            dst_port INTEGER NOT NULL,
-            protocol TEXT NOT NULL,
-            terminal_id TEXT NOT NULL,
-            source_file_path TEXT NOT NULL,
-            signature_id TEXT NOT NULL,
-            attack_payload TEXT NOT NULL,
-            attack_stage TEXT NOT NULL,
-            attack_ip TEXT NOT NULL,
-            attacked_ip TEXT NOT NULL,
-            apt_group TEXT NOT NULL,
-            vul_type TEXT NOT NULL,
-            cve_id TEXT NOT NULL,
-            vul_desc TEXT NOT NULL,
+            control_rule_id TEXT,
+            control_task_id TEXT,
+            procedure_technique_id JSONB,
+            session_id TEXT,
+            ip_version SMALLINT,
+            src_ip TEXT,
+            src_port INTEGER,
+            dst_ip TEXT,
+            dst_port INTEGER,
+            protocol TEXT,
+            terminal_id TEXT,
+            source_file_path TEXT,
+            signature_id TEXT,
+            attack_payload TEXT,
+            attack_stage TEXT,
+            attack_ip TEXT,
+            attacked_ip TEXT,
+            apt_group TEXT,
+            vul_type TEXT,
+            cve_id TEXT,
+            vul_desc TEXT,
             data JSONB,
             created_at TIMESTAMPTZ DEFAULT now()
         )"
@@ -66,46 +66,46 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<PgPool> {
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS malicious_sample_alerts (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-            alarm_id TEXT NOT NULL,
-            alarm_date BIGINT NOT NULL,
-            alarm_severity SMALLINT NOT NULL,
-            alarm_name TEXT NOT NULL,
-            alarm_description TEXT NOT NULL,
+            alarm_id TEXT,
+            alarm_date BIGINT,
+            alarm_severity SMALLINT,
+            alarm_name TEXT,
+            alarm_description TEXT,
             alarm_type SMALLINT NOT NULL,
             alarm_subtype INTEGER NOT NULL,
             source SMALLINT NOT NULL,
-            control_rule_id TEXT NOT NULL,
-            control_task_id TEXT NOT NULL,
-            procedure_technique_id JSONB NOT NULL,
-            session_id TEXT NOT NULL,
+            control_rule_id TEXT,
+            control_task_id TEXT,
+            procedure_technique_id JSONB,
+            session_id TEXT,
             ip_version SMALLINT,
-            src_ip TEXT NOT NULL,
+            src_ip TEXT,
             src_port INTEGER,
-            dst_ip TEXT NOT NULL,
+            dst_ip TEXT,
             dst_port INTEGER,
-            protocol TEXT NOT NULL,
-            terminal_id TEXT NOT NULL,
-            source_file_path TEXT NOT NULL,
-            sample_source SMALLINT NOT NULL,
-            md5 TEXT NOT NULL,
-            sha1 TEXT NOT NULL,
-            sha256 TEXT NOT NULL,
-            sha512 TEXT NOT NULL,
-            ssdeep TEXT NOT NULL,
-            sample_original_name TEXT NOT NULL,
-            sample_description TEXT NOT NULL,
-            sample_family TEXT NOT NULL,
-            apt_group TEXT NOT NULL,
-            sample_alarm_engine JSONB NOT NULL,
-            target_platform TEXT NOT NULL,
-            file_type TEXT NOT NULL,
-            file_size BIGINT NOT NULL,
-            language TEXT NOT NULL,
-            rule TEXT NOT NULL,
-            target_content TEXT NOT NULL,
-            compile_date BIGINT NOT NULL,
-            last_analy_date BIGINT NOT NULL,
-            sample_alarm_detail TEXT NOT NULL,
+            protocol TEXT,
+            terminal_id TEXT,
+            source_file_path TEXT,
+            sample_source SMALLINT,
+            md5 TEXT,
+            sha1 TEXT,
+            sha256 TEXT,
+            sha512 TEXT,
+            ssdeep TEXT,
+            sample_original_name TEXT,
+            sample_description TEXT,
+            sample_family TEXT,
+            apt_group TEXT,
+            sample_alarm_engine JSONB,
+            target_platform TEXT,
+            file_type TEXT,
+            file_size BIGINT,
+            language TEXT,
+            rule TEXT,
+            target_content TEXT,
+            compile_date BIGINT,
+            last_analy_date BIGINT,
+            sample_alarm_detail TEXT,
             data JSONB,
             created_at TIMESTAMPTZ DEFAULT now()
         )"
@@ -117,42 +117,42 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<PgPool> {
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS host_behavior_alerts (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-            alarm_id TEXT NOT NULL,
-            alarm_date BIGINT NOT NULL,
-            alarm_severity SMALLINT NOT NULL,
-            alarm_name TEXT NOT NULL,
-            alarm_description TEXT NOT NULL,
+            alarm_id TEXT,
+            alarm_date BIGINT,
+            alarm_severity SMALLINT,
+            alarm_name TEXT,
+            alarm_description TEXT,
             alarm_type SMALLINT NOT NULL,
             alarm_subtype INTEGER NOT NULL,
             source SMALLINT NOT NULL,
-            control_rule_id TEXT NOT NULL,
-            control_task_id TEXT NOT NULL,
-            procedure_technique_id JSONB NOT NULL,
-            session_id TEXT NOT NULL,
+            control_rule_id TEXT,
+            control_task_id TEXT,
+            procedure_technique_id JSONB,
+            session_id TEXT,
             ip_version SMALLINT,
-            src_ip TEXT NOT NULL,
+            src_ip TEXT,
             src_port INTEGER,
-            dst_ip TEXT NOT NULL,
+            dst_ip TEXT,
             dst_port INTEGER,
-            protocol TEXT NOT NULL,
-            terminal_id TEXT NOT NULL,
-            source_file_path TEXT NOT NULL,
-            host_name TEXT NOT NULL,
-            terminal_ip TEXT NOT NULL,
-            user_account TEXT NOT NULL,
-            terminal_os TEXT NOT NULL,
-            dst_process_md5 TEXT NOT NULL,
-            dst_process_path TEXT NOT NULL,
-            dst_process_cli TEXT NOT NULL,
-            src_process_md5 TEXT NOT NULL,
-            src_process_path TEXT NOT NULL,
-            src_process_cli TEXT NOT NULL,
-            register_key_name TEXT NOT NULL,
-            register_key_value TEXT NOT NULL,
-            register_path TEXT NOT NULL,
-            file_name TEXT NOT NULL,
-            file_md5 TEXT NOT NULL,
-            file_path TEXT NOT NULL,
+            protocol TEXT,
+            terminal_id TEXT,
+            source_file_path TEXT,
+            host_name TEXT,
+            terminal_ip TEXT,
+            user_account TEXT,
+            terminal_os TEXT,
+            dst_process_md5 TEXT,
+            dst_process_path TEXT,
+            dst_process_cli TEXT,
+            src_process_md5 TEXT,
+            src_process_path TEXT,
+            src_process_cli TEXT,
+            register_key_name TEXT,
+            register_key_value TEXT,
+            register_path TEXT,
+            file_name TEXT,
+            file_md5 TEXT,
+            file_path TEXT,
             data JSONB,
             created_at TIMESTAMPTZ DEFAULT now()
         )"
@@ -195,35 +195,35 @@ pub async fn reset_database(pool: &PgPool) -> Result<()> {
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, sqlx::FromRow)]
 pub struct NetworkAttackRecord {
     pub id: Uuid,
-    pub alarm_id: String,
-    pub alarm_date: i64,
-    pub alarm_severity: i16,
-    pub alarm_name: String,
-    pub alarm_description: String,
+    pub alarm_id: Option<String>,
+    pub alarm_date: Option<i64>,
+    pub alarm_severity: Option<i16>,
+    pub alarm_name: Option<String>,
+    pub alarm_description: Option<String>,
     pub alarm_type: i16,
     pub alarm_subtype: i32,
     pub source: i16,
-    pub control_rule_id: String,
-    pub control_task_id: String,
-    pub procedure_technique_id: serde_json::Value,
-    pub session_id: String,
-    pub ip_version: i16,
-    pub src_ip: String,
-    pub src_port: i32,
-    pub dst_ip: String,
-    pub dst_port: i32,
-    pub protocol: String,
-    pub terminal_id: String,
-    pub source_file_path: String,
-    pub signature_id: String,
-    pub attack_payload: String,
-    pub attack_stage: String,
-    pub attack_ip: String,
-    pub attacked_ip: String,
-    pub apt_group: String,
-    pub vul_type: String,
-    pub cve_id: String,
-    pub vul_desc: String,
+    pub control_rule_id: Option<String>,
+    pub control_task_id: Option<String>,
+    pub procedure_technique_id: Option<serde_json::Value>,
+    pub session_id: Option<String>,
+    pub ip_version: Option<i16>,
+    pub src_ip: Option<String>,
+    pub src_port: Option<i32>,
+    pub dst_ip: Option<String>,
+    pub dst_port: Option<i32>,
+    pub protocol: Option<String>,
+    pub terminal_id: Option<String>,
+    pub source_file_path: Option<String>,
+    pub signature_id: Option<String>,
+    pub attack_payload: Option<String>,
+    pub attack_stage: Option<String>,
+    pub attack_ip: Option<String>,
+    pub attacked_ip: Option<String>,
+    pub apt_group: Option<String>,
+    pub vul_type: Option<String>,
+    pub cve_id: Option<String>,
+    pub vul_desc: Option<String>,
     pub data: Option<serde_json::Value>,
     pub created_at: DateTime<Utc>,
 }
@@ -231,46 +231,46 @@ pub struct NetworkAttackRecord {
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, sqlx::FromRow)]
 pub struct MaliciousSampleRecord {
     pub id: Uuid,
-    pub alarm_id: String,
-    pub alarm_date: i64,
-    pub alarm_severity: i16,
-    pub alarm_name: String,
-    pub alarm_description: String,
+    pub alarm_id: Option<String>,
+    pub alarm_date: Option<i64>,
+    pub alarm_severity: Option<i16>,
+    pub alarm_name: Option<String>,
+    pub alarm_description: Option<String>,
     pub alarm_type: i16,
     pub alarm_subtype: i32,
     pub source: i16,
-    pub control_rule_id: String,
-    pub control_task_id: String,
-    pub procedure_technique_id: serde_json::Value,
-    pub session_id: String,
+    pub control_rule_id: Option<String>,
+    pub control_task_id: Option<String>,
+    pub procedure_technique_id: Option<serde_json::Value>,
+    pub session_id: Option<String>,
     pub ip_version: Option<i16>,
-    pub src_ip: String,
+    pub src_ip: Option<String>,
     pub src_port: Option<i32>,
-    pub dst_ip: String,
+    pub dst_ip: Option<String>,
     pub dst_port: Option<i32>,
-    pub protocol: String,
-    pub terminal_id: String,
-    pub source_file_path: String,
-    pub sample_source: i16,
-    pub md5: String,
-    pub sha1: String,
-    pub sha256: String,
-    pub sha512: String,
-    pub ssdeep: String,
-    pub sample_original_name: String,
-    pub sample_description: String,
-    pub sample_family: String,
-    pub apt_group: String,
-    pub sample_alarm_engine: serde_json::Value,
-    pub target_platform: String,
-    pub file_type: String,
-    pub file_size: i64,
-    pub language: String,
-    pub rule: String,
-    pub target_content: String,
-    pub compile_date: i64,
-    pub last_analy_date: i64,
-    pub sample_alarm_detail: String,
+    pub protocol: Option<String>,
+    pub terminal_id: Option<String>,
+    pub source_file_path: Option<String>,
+    pub sample_source: Option<i16>,
+    pub md5: Option<String>,
+    pub sha1: Option<String>,
+    pub sha256: Option<String>,
+    pub sha512: Option<String>,
+    pub ssdeep: Option<String>,
+    pub sample_original_name: Option<String>,
+    pub sample_description: Option<String>,
+    pub sample_family: Option<String>,
+    pub apt_group: Option<String>,
+    pub sample_alarm_engine: Option<serde_json::Value>,
+    pub target_platform: Option<String>,
+    pub file_type: Option<String>,
+    pub file_size: Option<i64>,
+    pub language: Option<String>,
+    pub rule: Option<String>,
+    pub target_content: Option<String>,
+    pub compile_date: Option<i64>,
+    pub last_analy_date: Option<i64>,
+    pub sample_alarm_detail: Option<String>,
     pub data: Option<serde_json::Value>,
     pub created_at: DateTime<Utc>,
 }
@@ -278,42 +278,42 @@ pub struct MaliciousSampleRecord {
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, sqlx::FromRow)]
 pub struct HostBehaviorRecord {
     pub id: Uuid,
-    pub alarm_id: String,
-    pub alarm_date: i64,
-    pub alarm_severity: i16,
-    pub alarm_name: String,
-    pub alarm_description: String,
+    pub alarm_id: Option<String>,
+    pub alarm_date: Option<i64>,
+    pub alarm_severity: Option<i16>,
+    pub alarm_name: Option<String>,
+    pub alarm_description: Option<String>,
     pub alarm_type: i16,
     pub alarm_subtype: i32,
     pub source: i16,
-    pub control_rule_id: String,
-    pub control_task_id: String,
-    pub procedure_technique_id: serde_json::Value,
-    pub session_id: String,
+    pub control_rule_id: Option<String>,
+    pub control_task_id: Option<String>,
+    pub procedure_technique_id: Option<serde_json::Value>,
+    pub session_id: Option<String>,
     pub ip_version: Option<i16>,
-    pub src_ip: String,
+    pub src_ip: Option<String>,
     pub src_port: Option<i32>,
-    pub dst_ip: String,
+    pub dst_ip: Option<String>,
     pub dst_port: Option<i32>,
-    pub protocol: String,
-    pub terminal_id: String,
-    pub source_file_path: String,
-    pub host_name: String,
-    pub terminal_ip: String,
-    pub user_account: String,
-    pub terminal_os: String,
-    pub dst_process_md5: String,
-    pub dst_process_path: String,
-    pub dst_process_cli: String,
-    pub src_process_md5: String,
-    pub src_process_path: String,
-    pub src_process_cli: String,
-    pub register_key_name: String,
-    pub register_key_value: String,
-    pub register_path: String,
-    pub file_name: String,
-    pub file_md5: String,
-    pub file_path: String,
+    pub protocol: Option<String>,
+    pub terminal_id: Option<String>,
+    pub source_file_path: Option<String>,
+    pub host_name: Option<String>,
+    pub terminal_ip: Option<String>,
+    pub user_account: Option<String>,
+    pub terminal_os: Option<String>,
+    pub dst_process_md5: Option<String>,
+    pub dst_process_path: Option<String>,
+    pub dst_process_cli: Option<String>,
+    pub src_process_md5: Option<String>,
+    pub src_process_path: Option<String>,
+    pub src_process_cli: Option<String>,
+    pub register_key_name: Option<String>,
+    pub register_key_value: Option<String>,
+    pub register_path: Option<String>,
+    pub file_name: Option<String>,
+    pub file_md5: Option<String>,
+    pub file_path: Option<String>,
     pub data: Option<serde_json::Value>,
     pub created_at: DateTime<Utc>,
 }
@@ -327,14 +327,14 @@ pub struct InvalidAlertRecord {
 }
 
 pub async fn insert_network_attack(pool: &PgPool, alert: &NetworkAttackAlert) -> Result<()> {
-    let procedure_technique_id = serde_json::Value::Array(
-        alert
-            .procedure_technique_id
-            .iter()
-            .cloned()
-            .map(serde_json::Value::String)
-            .collect(),
-    );
+    let procedure_technique_id = alert.procedure_technique_id.as_ref().map(|v| {
+        serde_json::Value::Array(
+            v.iter()
+                .cloned()
+                .map(serde_json::Value::String)
+                .collect(),
+        )
+    });
 
     sqlx::query(
         "INSERT INTO network_attack_alerts (
@@ -352,7 +352,7 @@ pub async fn insert_network_attack(pool: &PgPool, alert: &NetworkAttackAlert) ->
     )
     .bind(&alert.alarm_id)
     .bind(alert.alarm_date)
-    .bind(alert.alarm_severity as i16)
+    .bind(alert.alarm_severity.map(|v| v as i16))
     .bind(&alert.alarm_name)
     .bind(&alert.alarm_description)
     .bind(alert.alarm_type as i16)
@@ -362,11 +362,11 @@ pub async fn insert_network_attack(pool: &PgPool, alert: &NetworkAttackAlert) ->
     .bind(&alert.control_task_id)
     .bind(&procedure_technique_id)
     .bind(&alert.session_id)
-    .bind(alert.ip_version as i16)
+    .bind(alert.ip_version.map(|v| v as i16))
     .bind(&alert.src_ip)
-    .bind(alert.src_port as i32)
+    .bind(alert.src_port.map(|v| v as i32))
     .bind(&alert.dst_ip)
-    .bind(alert.dst_port as i32)
+    .bind(alert.dst_port.map(|v| v as i32))
     .bind(&alert.protocol)
     .bind(&alert.terminal_id)
     .bind(&alert.source_file_path)
@@ -387,23 +387,23 @@ pub async fn insert_network_attack(pool: &PgPool, alert: &NetworkAttackAlert) ->
 }
 
 pub async fn insert_malicious_sample(pool: &PgPool, alert: &MaliciousSampleAlert) -> Result<()> {
-    let procedure_technique_id = serde_json::Value::Array(
-        alert
-            .procedure_technique_id
-            .iter()
-            .cloned()
-            .map(serde_json::Value::String)
-            .collect(),
-    );
+    let procedure_technique_id = alert.procedure_technique_id.as_ref().map(|v| {
+        serde_json::Value::Array(
+            v.iter()
+                .cloned()
+                .map(serde_json::Value::String)
+                .collect(),
+        )
+    });
 
-    let sample_alarm_engine = serde_json::Value::Array(
-        alert
-            .sample_alarm_engine
-            .iter()
-            .cloned()
-            .map(|n| serde_json::Value::Number(serde_json::Number::from(n)))
-            .collect(),
-    );
+    let sample_alarm_engine = alert.sample_alarm_engine.as_ref().map(|v| {
+        serde_json::Value::Array(
+            v.iter()
+                .cloned()
+                .map(|n| serde_json::Value::Number(serde_json::Number::from(n)))
+                .collect(),
+        )
+    });
 
     sqlx::query(
         "INSERT INTO malicious_sample_alerts (
@@ -424,7 +424,7 @@ pub async fn insert_malicious_sample(pool: &PgPool, alert: &MaliciousSampleAlert
     )
     .bind(&alert.alarm_id)
     .bind(alert.alarm_date)
-    .bind(alert.alarm_severity as i16)
+    .bind(alert.alarm_severity.map(|v| v as i16))
     .bind(&alert.alarm_name)
     .bind(&alert.alarm_description)
     .bind(alert.alarm_type as i16)
@@ -442,7 +442,7 @@ pub async fn insert_malicious_sample(pool: &PgPool, alert: &MaliciousSampleAlert
     .bind(&alert.protocol)
     .bind(&alert.terminal_id)
     .bind(&alert.source_file_path)
-    .bind(alert.sample_source as i16)
+    .bind(alert.sample_source.map(|v| v as i16))
     .bind(&alert.md5)
     .bind(&alert.sha1)
     .bind(&alert.sha256)
@@ -455,7 +455,7 @@ pub async fn insert_malicious_sample(pool: &PgPool, alert: &MaliciousSampleAlert
     .bind(&sample_alarm_engine)
     .bind(&alert.target_platform)
     .bind(&alert.file_type)
-    .bind(alert.file_size as i64)
+    .bind(alert.file_size.map(|v| v as i64))
     .bind(&alert.language)
     .bind(&alert.rule)
     .bind(&alert.target_content)
@@ -470,14 +470,14 @@ pub async fn insert_malicious_sample(pool: &PgPool, alert: &MaliciousSampleAlert
 }
 
 pub async fn insert_host_behavior(pool: &PgPool, alert: &HostBehaviorAlert) -> Result<()> {
-    let procedure_technique_id = serde_json::Value::Array(
-        alert
-            .procedure_technique_id
-            .iter()
-            .cloned()
-            .map(serde_json::Value::String)
-            .collect(),
-    );
+    let procedure_technique_id = alert.procedure_technique_id.as_ref().map(|v| {
+        serde_json::Value::Array(
+            v.iter()
+                .cloned()
+                .map(serde_json::Value::String)
+                .collect(),
+        )
+    });
 
     sqlx::query(
         "INSERT INTO host_behavior_alerts (
@@ -499,7 +499,7 @@ pub async fn insert_host_behavior(pool: &PgPool, alert: &HostBehaviorAlert) -> R
     )
     .bind(&alert.alarm_id)
     .bind(alert.alarm_date)
-    .bind(alert.alarm_severity as i16)
+    .bind(alert.alarm_severity.map(|v| v as i16))
     .bind(&alert.alarm_name)
     .bind(&alert.alarm_description)
     .bind(alert.alarm_type as i16)
