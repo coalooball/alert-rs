@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: alert-server:latest
     container_name: alert-server
     network_mode: host
     volumes:

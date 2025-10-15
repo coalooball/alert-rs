@@ -104,30 +104,23 @@ async fn main() {
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
 
     println!("╔══════════════════════════════════════════════════════════╗");
-    println!("║  🦀 Axum 告警推送服务器启动成功！                       ║");
+    println!("║  Axum 告警推送服务器启动成功！                          ║");
     println!("╚══════════════════════════════════════════════════════════╝");
     println!();
-    println!("🌐 访问地址:");
-    println!("   👉 前端界面（统一视图）: http://localhost:3000/all");
-    println!("   👉 前端界面（独立页面）: http://localhost:3000");
-    println!("   👉 API 接口: http://localhost:3000/api/*");
+    println!("访问地址:");
+    println!("   前端界面（统一视图）: http://localhost:3000/all");
+    println!("   前端界面（独立页面）: http://localhost:3000");
+    println!("   API 接口: http://localhost:3000/api/*");
     println!();
-    println!("📊 可用路由:");
+    println!("可用路由:");
     println!("   • /all                - 统一 Tab 视图（支持 iframe 嵌套）");
     println!("   • /network-attack     - 精控流量");
     println!("   • /malicious-sample   - 恶意样本");
     println!("   • /host-behavior      - 终端日志");
     println!("   • /invalid-alert      - 无效告警");
-    println!();
-    println!("📥 当前未开放 HTTP 数据接收端点（已切换为 Kafka 通道）");
-    println!();
-    println!("💡 提示：使用 generator CLI 工具向 Kafka 发送告警数据");
-    println!("   cargo run --bin generator -- --help");
-    println!();
+
     println!("   按 Ctrl+C 停止服务");
     println!();
-
-    info!("服务器启动在 http://localhost:3000（无路由）");
     info!("Kafka brokers={}", config.kafka.brokers);
 
     // 启动服务器

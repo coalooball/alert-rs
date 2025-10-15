@@ -8,7 +8,7 @@ use std::time::Duration;
 use tokio::time;
 
 // 重用库中的模块
-use rust_hello::generators;
+use alert_rs::generators;
 
 #[derive(Parser)]
 #[command(name = "generator")]
