@@ -107,12 +107,15 @@ async fn main() {
     println!("╚══════════════════════════════════════════════════════════╝");
     println!();
     println!("访问地址:");
-    println!("   前端界面（统一视图）: http://localhost:3000/all");
-    println!("   前端界面（独立页面）: http://localhost:3000");
+    println!("   前端界面（告警数据）: http://localhost:3000/alert-data");
+    println!("   前端界面（威胁事件）: http://localhost:3000/threat-event");
+    println!("   前端界面（自动化配置）: http://localhost:3000/auto-config");
     println!("   API 接口: http://localhost:3000/api/*");
     println!();
     println!("可用路由:");
-    println!("   • /all                - 统一 Tab 视图（支持 iframe 嵌套）");
+    println!("   • /alert-data         - 告警数据（统一 Tab 视图）");
+    println!("   • /threat-event       - 威胁事件");
+    println!("   • /auto-config        - 自动化配置");
     println!("   • /network-attack     - 精控流量");
     println!("   • /malicious-sample   - 恶意样本");
     println!("   • /host-behavior      - 终端日志");

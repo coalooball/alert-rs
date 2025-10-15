@@ -4,7 +4,35 @@
       <!-- 顶部标题栏 -->
       <el-header style="background-color: #304156; height: 60px;">
         <div class="header-top">
-          <h2>告警系统</h2>
+          <div class="header-left">
+            <h2>告警系统</h2>
+            <div class="nav-buttons">
+              <el-button 
+                :type="activeNav === '/alert-data' ? 'primary' : ''"
+                :text="activeNav !== '/alert-data'"
+                @click="handleNavSelect('/alert-data')"
+                class="nav-btn"
+              >
+                告警数据
+              </el-button>
+              <el-button 
+                :type="activeNav === '/threat-event' ? 'primary' : ''"
+                :text="activeNav !== '/threat-event'"
+                @click="handleNavSelect('/threat-event')"
+                class="nav-btn"
+              >
+                威胁事件
+              </el-button>
+              <el-button 
+                :type="activeNav === '/auto-config' ? 'primary' : ''"
+                :text="activeNav !== '/auto-config'"
+                @click="handleNavSelect('/auto-config')"
+                class="nav-btn"
+              >
+                自动化配置
+              </el-button>
+            </div>
+          </div>
           <!-- <div class="header-right">
             <el-tag type="success">在线</el-tag>
             <span style="margin-left: 15px">{{ currentTime }}</span>
@@ -13,14 +41,14 @@
       </el-header>
 
       <!-- Tab 导航栏 -->
-      <el-header v-if="!route.meta.standalone" style="background-color: #fff; border-bottom: 1px solid #e6e6e6; height: auto; padding: 0;">
+      <!-- <el-header style="background-color: #fff; border-bottom: 1px solid #e6e6e6; height: auto; padding: 0;">
         <el-tabs v-model="activeTab" @tab-click="handleTabClick" class="custom-tabs">
-          <el-tab-pane label="网络攻击" name="/network-attack"></el-tab-pane>
+          <el-tab-pane label="精控流量" name="/network-attack"></el-tab-pane>
           <el-tab-pane label="恶意样本" name="/malicious-sample"></el-tab-pane>
-          <el-tab-pane label="主机行为" name="/host-behavior"></el-tab-pane>
+          <el-tab-pane label="终端日志" name="/host-behavior"></el-tab-pane>
           <el-tab-pane label="无效告警" name="/invalid-alert"></el-tab-pane>
         </el-tabs>
-      </el-header>
+      </el-header> -->
 
       <!-- 主内容区 -->
       <el-main style="background-color: #f0f2f5">
@@ -38,6 +66,7 @@ const router = useRouter()
 const route = useRoute()
 const currentTime = ref('')
 const activeTab = ref('/network-attack')
+const activeNav = ref('/alert-data')
 
 const updateTime = () => {
   currentTime.value = new Date().toLocaleString('zh-CN', {
@@ -54,12 +83,20 @@ const handleTabClick = (tab) => {
   router.push(tab.paneName)
 }
 
+const handleNavSelect = (index) => {
+  router.push(index)
+}
+
 let timer = null
 
 onMounted(() => {
   updateTime()
   timer = setInterval(updateTime, 1000)
   activeTab.value = route.path
+  // 设置顶部导航激活状态
+  if (route.meta.standalone) {
+    activeNav.value = route.path
+  }
 })
 
 onUnmounted(() => {
@@ -70,6 +107,10 @@ onUnmounted(() => {
 
 watch(() => route.path, (newPath) => {
   activeTab.value = newPath
+  // 更新顶部导航激活状态
+  if (route.meta.standalone) {
+    activeNav.value = newPath
+  }
 })
 </script>
 
@@ -98,10 +139,27 @@ watch(() => route.path, (newPath) => {
   align-items: center;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
 .header-top h2 {
   color: #fff;
   font-size: 20px;
   margin: 0;
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.nav-btn {
+  font-size: 14px;
+  height: 36px;
 }
 
 .header-right {

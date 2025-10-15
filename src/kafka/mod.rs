@@ -40,6 +40,7 @@ pub async fn run_consumer(kafka: KafkaConfig, topics: TopicsConfig, pool: PgPool
                                         }
                                     }
                                     Err(e) => {
+                                        tracing::info!("Failed to parse network_attack alert: {} | raw: {}", e, text);
                                         let data = serde_json::json!({
                                             "topic": topic,
                                             "raw": text,
@@ -57,6 +58,7 @@ pub async fn run_consumer(kafka: KafkaConfig, topics: TopicsConfig, pool: PgPool
                                         }
                                     }
                                     Err(e) => {
+                                        tracing::info!("Failed to parse malicious_sample alert: {} | raw: {}", e, text);
                                         let data = serde_json::json!({
                                             "topic": topic,
                                             "raw": text,
@@ -74,6 +76,7 @@ pub async fn run_consumer(kafka: KafkaConfig, topics: TopicsConfig, pool: PgPool
                                         }
                                     }
                                     Err(e) => {
+                                        tracing::info!("Failed to parse host_behavior alert: {} | raw: {}", e, text);
                                         let data = serde_json::json!({
                                             "topic": topic,
                                             "raw": text,
