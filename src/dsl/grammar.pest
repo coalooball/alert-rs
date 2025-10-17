@@ -1,0 +1,79 @@
+// DSL 语法定义
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT = _{ "//" ~ (!"\n" ~ ANY)* }
+
+// ==================== 基础类型 ====================
+identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+number = @{ ASCII_DIGIT+ }
+string = ${ "\"" ~ string_inner ~ "\"" }
+string_inner = @{ (!("\"" | "\\") ~ ANY | "\\" ~ ANY)* }
+
+// ==================== 操作符 ====================
+eq_op = { "==" }
+ne_op = { "!=" }
+gt_op = { ">=" | ">" }
+lt_op = { "<=" | "<" }
+contains_op = { "CONTAINS" }
+regex_op = { "REGEX" }
+in_op = { "IN" }
+and_op = { "AND" }
+or_op = { "OR" }
+not_op = { "NOT" }
+
+comparison_op = { eq_op | ne_op | gt_op | lt_op | contains_op | regex_op | in_op }
+
+// ==================== 值类型 ====================
+value = { number | string | identifier }
+value_list = { "(" ~ value ~ ("," ~ value)* ~ ")" }
+
+// ==================== 表达式 ====================
+field_ref = { identifier ~ ("." ~ identifier)? }
+simple_condition = { field_ref ~ comparison_op ~ (value_list | value) }
+condition = { simple_condition ~ ((and_op | or_op) ~ simple_condition)* }
+
+// ==================== 收敛规则 (CONVERGE) ====================
+converge_where = { "WHERE" ~ condition }
+converge_group_by = { "GROUP" ~ "BY" ~ identifier ~ ("," ~ identifier)* }
+converge_window = { "WINDOW" ~ number ~ ("m" | "h" | "d" | "minutes" | "hours" | "days")? }
+converge_threshold = { "THRESHOLD" ~ number }
+
+converge_rule = {
+    SOI ~
+    "CONVERGE" ~
+    converge_where ~
+    converge_group_by ~
+    converge_window ~
+    converge_threshold ~
+    EOI
+}
+
+// ==================== 关联规则 (CORRELATE) ====================
+event_def = { "EVENT" ~ identifier ~ "WHERE" ~ condition }
+join_condition = { field_ref ~ eq_op ~ field_ref ~ ((and_op | or_op) ~ field_ref ~ eq_op ~ field_ref)* }
+join_on = { "JOIN" ~ "ON" ~ join_condition }
+correlate_window = { "WINDOW" ~ number ~ ("m" | "h" | "d" | "minutes" | "hours" | "days")? }
+
+generate_severity = { "SEVERITY" ~ number }
+generate_name = { "NAME" ~ string }
+generate_description = { "DESCRIPTION" ~ string }
+generate_block = {
+    "GENERATE" ~
+    generate_severity ~
+    generate_name ~
+    generate_description
+}
+
+correlate_rule = {
+    SOI ~
+    "CORRELATE" ~
+    event_def+ ~
+    join_on ~
+    correlate_window ~
+    generate_block ~
+    EOI
+}
+
+// ==================== 主入口 ====================
+dsl_rule = { SOI ~ (converge_rule | correlate_rule) ~ EOI }
+

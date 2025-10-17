@@ -51,16 +51,16 @@
             {{ getAlarmSubtypeName(row.alarm_subtype) }}
           </template>
         </el-table-column>
-        <el-table-column prop="src_ip" label="源IP" width="150" />
-        <el-table-column prop="src_port" label="源端口" width="100" />
-        <el-table-column prop="dst_ip" label="目标IP" width="150" />
-        <el-table-column prop="dst_port" label="目标端口" width="100" />
-        <el-table-column prop="protocol" label="协议" width="100" />
         <el-table-column prop="host_name" label="主机名" width="180" show-overflow-tooltip />
         <el-table-column prop="terminal_ip" label="终端IP" width="150" />
         <el-table-column prop="user_account" label="用户账号" width="150" show-overflow-tooltip />
         <el-table-column prop="terminal_os" label="操作系统" width="150" />
         <el-table-column prop="src_process_path" label="源进程路径" width="250" show-overflow-tooltip />
+        <el-table-column prop="src_ip" label="源IP" width="150" />
+        <el-table-column prop="src_port" label="源端口" width="100" />
+        <el-table-column prop="dst_ip" label="目标IP" width="150" />
+        <el-table-column prop="dst_port" label="目标端口" width="100" />
+        <el-table-column prop="protocol" label="协议" width="100" />
         <el-table-column prop="created_at" label="创建时间" width="180" />
         <el-table-column label="操作" width="100" fixed="right" align="center">
           <template #default="{ row }">

@@ -2,16 +2,17 @@ mod config;
 mod db;
 mod kafka;
 mod models;
+mod api;
+mod dsl;
 
 use crate::config::{load_config, AlarmTypesConfig};
 use axum::{
     Router,
-    extract::{State, Query, Path},
+    extract::State,
     response::{Json, IntoResponse, Response},
-    routing::{get, put},
+    routing::{get, put, post, delete},
     http::{StatusCode, Uri},
 };
-use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::info;
@@ -20,7 +21,6 @@ use sqlx::PgPool;
 use tower_http::cors::{CorsLayer, Any};
 use tower_http::services::ServeDir;
 use clap::Parser;
-use uuid::Uuid;
 
 #[derive(Parser, Debug)]
 #[command(name = "server", about = "Axum 告警推送服务器")] 
@@ -35,9 +35,9 @@ struct Args {
 }
 
 // 应用状态
-struct AppState {
-    pool: PgPool,
-    alarm_types: AlarmTypesConfig,
+pub struct AppState {
+    pub pool: PgPool,
+    pub alarm_types: AlarmTypesConfig,
 }
 
 #[tokio::main]
@@ -105,12 +105,27 @@ async fn main() {
 
     // API 路由
     let api_routes = Router::new()
-        .route("/api/network-attacks", get(get_network_attacks))
-        .route("/api/malicious-samples", get(get_malicious_samples))
-        .route("/api/host-behaviors", get(get_host_behaviors))
-        .route("/api/invalid-alerts", get(get_invalid_alerts))
-        .route("/api/threat-events", get(get_threat_events))
-        .route("/api/threat-events/:id", put(update_threat_event))
+        // 告警数据路由
+        .route("/api/network-attacks", get(api::alert_data::get_network_attacks))
+        .route("/api/malicious-samples", get(api::alert_data::get_malicious_samples))
+        .route("/api/host-behaviors", get(api::alert_data::get_host_behaviors))
+        .route("/api/invalid-alerts", get(api::alert_data::get_invalid_alerts))
+        .route("/api/threat-events", get(api::alert_data::get_threat_events))
+        .route("/api/threat-events/:id", put(api::alert_data::update_threat_event))
+        // 标签管理路由
+        .route("/api/tags", get(api::tag_management::get_tags))
+        .route("/api/tags/all", get(api::tag_management::get_all_tags))
+        .route("/api/tags/:id", get(api::tag_management::get_tag_by_id))
+        .route("/api/tags", post(api::tag_management::create_tag))
+        .route("/api/tags/:id", put(api::tag_management::update_tag))
+        .route("/api/tags/:id", delete(api::tag_management::delete_tag))
+        // 字段定义路由
+        .route("/api/alert-fields", get(api::alert_fields::get_alert_fields))
+        .route("/api/alert-fields/groups", get(api::alert_fields::get_common_field_groups))
+        // DSL 编译路由
+        .route("/api/rules/convergence/compile", post(api::dsl_compile::compile_converge_rule))
+        .route("/api/rules/correlation/compile", post(api::dsl_compile::compile_correlate_rule))
+        // 其他路由
         .route("/api/alarm-types", get(get_alarm_types))
         .with_state(app_state);
 
@@ -150,164 +165,6 @@ async fn main() {
     // 启动服务器
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
-}
-
-// 查询参数
-#[derive(Deserialize)]
-struct PageQuery {
-    #[serde(default = "default_page")]
-    page: u64,
-    #[serde(default = "default_page_size")]
-    page_size: u64,
-}
-
-fn default_page() -> u64 { 1 }
-fn default_page_size() -> u64 { 20 }
-
-// 响应结构
-#[derive(Serialize)]
-struct PageResponse<T> {
-    data: Vec<T>,
-    total: u64,
-    page: u64,
-    page_size: u64,
-}
-
-// API 处理函数
-async fn get_network_attacks(
-    State(state): State<Arc<AppState>>,
-    Query(params): Query<PageQuery>,
-) -> Json<PageResponse<db::NetworkAttackRecord>> {
-    match db::query_network_attacks(&state.pool, params.page, params.page_size).await {
-        Ok((data, total)) => Json(PageResponse {
-            data,
-            total,
-            page: params.page,
-            page_size: params.page_size,
-        }),
-        Err(e) => {
-            tracing::error!("Query network attacks failed: {}", e);
-            Json(PageResponse {
-                data: vec![],
-                total: 0,
-                page: params.page,
-                page_size: params.page_size,
-            })
-        }
-    }
-}
-
-async fn get_malicious_samples(
-    State(state): State<Arc<AppState>>,
-    Query(params): Query<PageQuery>,
-) -> Json<PageResponse<db::MaliciousSampleRecord>> {
-    match db::query_malicious_samples(&state.pool, params.page, params.page_size).await {
-        Ok((data, total)) => Json(PageResponse {
-            data,
-            total,
-            page: params.page,
-            page_size: params.page_size,
-        }),
-        Err(e) => {
-            tracing::error!("Query malicious samples failed: {}", e);
-            Json(PageResponse {
-                data: vec![],
-                total: 0,
-                page: params.page,
-                page_size: params.page_size,
-            })
-        }
-    }
-}
-
-async fn get_host_behaviors(
-    State(state): State<Arc<AppState>>,
-    Query(params): Query<PageQuery>,
-) -> Json<PageResponse<db::HostBehaviorRecord>> {
-    match db::query_host_behaviors(&state.pool, params.page, params.page_size).await {
-        Ok((data, total)) => Json(PageResponse {
-            data,
-            total,
-            page: params.page,
-            page_size: params.page_size,
-        }),
-        Err(e) => {
-            tracing::error!("Query host behaviors failed: {}", e);
-            Json(PageResponse {
-                data: vec![],
-                total: 0,
-                page: params.page,
-                page_size: params.page_size,
-            })
-        }
-    }
-}
-
-async fn get_invalid_alerts(
-    State(state): State<Arc<AppState>>,
-    Query(params): Query<PageQuery>,
-) -> Json<PageResponse<db::InvalidAlertRecord>> {
-    match db::query_invalid_alerts(&state.pool, params.page, params.page_size).await {
-        Ok((data, total)) => Json(PageResponse {
-            data,
-            total,
-            page: params.page,
-            page_size: params.page_size,
-        }),
-        Err(e) => {
-            tracing::error!("Query invalid alerts failed: {}", e);
-            Json(PageResponse {
-                data: vec![],
-                total: 0,
-                page: params.page,
-                page_size: params.page_size,
-            })
-        }
-    }
-}
-
-async fn get_threat_events(
-    State(state): State<Arc<AppState>>,
-    Query(params): Query<PageQuery>,
-) -> Json<PageResponse<db::ThreatEventRecord>> {
-    match db::threat_event::query_threat_events(&state.pool, params.page, params.page_size).await {
-        Ok((data, total)) => Json(PageResponse {
-            data,
-            total,
-            page: params.page,
-            page_size: params.page_size,
-        }),
-        Err(e) => {
-            tracing::error!("Query threat events failed: {}", e);
-            Json(PageResponse {
-                data: vec![],
-                total: 0,
-                page: params.page,
-                page_size: params.page_size,
-            })
-        }
-    }
-}
-
-// 更新威胁事件
-async fn update_threat_event(
-    State(state): State<Arc<AppState>>,
-    Path(id): Path<Uuid>,
-    Json(event): Json<db::ThreatEventInput>,
-) -> impl IntoResponse {
-    match db::threat_event::update_threat_event(&state.pool, id, &event).await {
-        Ok(_) => (StatusCode::OK, Json(serde_json::json!({
-            "success": true,
-            "message": "威胁事件更新成功"
-        }))),
-        Err(e) => {
-            tracing::error!("Update threat event failed: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({
-                "success": false,
-                "message": format!("更新失败: {}", e)
-            })))
-        }
-    }
 }
 
 // 获取告警类型枚举

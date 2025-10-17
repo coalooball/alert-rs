@@ -16,18 +16,16 @@
       </el-input>
     </div>
 
-    <el-table :data="tags" stripe style="width: 100%; margin-top: 20px;">
-      <el-table-column prop="id" label="标签ID" width="80" />
-      <el-table-column prop="name" label="标签名称" width="180">
+    <el-table :data="tags" stripe style="width: 100%; margin-top: 20px;" v-loading="loading">
+      <el-table-column prop="name" label="标签名称" width="200">
         <template #default="scope">
           <el-tag :color="scope.row.color" style="color: #fff;">
             {{ scope.row.name }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="category" label="分类" width="120" />
       <el-table-column prop="description" label="描述" />
-      <el-table-column prop="usage_count" label="使用次数" width="100" />
+      <el-table-column prop="usage_count" label="使用次数" width="120" />
       <el-table-column prop="created_at" label="创建时间" width="180" />
       <el-table-column label="操作" width="180" fixed="right">
         <template #default="scope">
@@ -52,15 +50,6 @@
         <el-form-item label="标签名称">
           <el-input v-model="formData.name" placeholder="请输入标签名称" />
         </el-form-item>
-        <el-form-item label="标签分类">
-          <el-select v-model="formData.category" placeholder="请选择分类" filterable allow-create>
-            <el-option label="优先级" value="优先级" />
-            <el-option label="处理方式" value="处理方式" />
-            <el-option label="攻击类型" value="攻击类型" />
-            <el-option label="业务分类" value="业务分类" />
-            <el-option label="其他" value="其他" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="标签颜色">
           <el-color-picker v-model="formData.color" show-alpha />
           <span style="margin-left: 10px;">{{ formData.color }}</span>
@@ -78,9 +67,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+import axios from 'axios'
 
 const tags = ref([])
 const currentPage = ref(1)
@@ -89,80 +79,44 @@ const total = ref(0)
 const searchText = ref('')
 const dialogVisible = ref(false)
 const dialogTitle = ref('添加标签')
+const loading = ref(false)
 const formData = ref({
   name: '',
-  category: '',
   color: '#409EFF',
   description: ''
 })
 
-const loadTags = () => {
-  // TODO: 调用 API 加载标签
-  // 示例数据
-  tags.value = [
-    { 
-      id: 1, 
-      name: '高优先级', 
-      category: '优先级',
-      color: '#F56C6C',
-      description: '需要优先处理的事件',
-      usage_count: 156,
-      created_at: '2025-01-10 10:30:00'
-    },
-    { 
-      id: 2, 
-      name: '需人工审核', 
-      category: '处理方式',
-      color: '#E6A23C',
-      description: '需要人工介入审核',
-      usage_count: 89,
-      created_at: '2025-01-11 14:20:00'
-    },
-    { 
-      id: 3, 
-      name: '自动处理', 
-      category: '处理方式',
-      color: '#67C23A',
-      description: '可以自动化处理',
-      usage_count: 234,
-      created_at: '2025-01-12 09:15:00'
-    },
-    { 
-      id: 4, 
-      name: 'APT攻击', 
-      category: '攻击类型',
-      color: '#909399',
-      description: '高级持续性威胁',
-      usage_count: 12,
-      created_at: '2025-01-13 16:45:00'
-    },
-    { 
-      id: 5, 
-      name: '误报', 
-      category: '其他',
-      color: '#909399',
-      description: '误报事件',
-      usage_count: 67,
-      created_at: '2025-01-14 11:00:00'
-    }
-  ]
-  
-  // 根据搜索文本过滤
-  if (searchText.value) {
-    tags.value = tags.value.filter(tag => 
-      tag.name.includes(searchText.value) || 
-      tag.description.includes(searchText.value)
-    )
+const loadTags = async () => {
+  loading.value = true
+  try {
+    const response = await axios.get('/api/tags', {
+      params: {
+        page: currentPage.value,
+        page_size: pageSize.value,
+        search: searchText.value || undefined
+      }
+    })
+    
+    tags.value = response.data.data
+    total.value = response.data.total
+  } catch (error) {
+    console.error('加载标签失败:', error)
+    ElMessage.error('加载标签失败: ' + (error.response?.data?.message || error.message))
+  } finally {
+    loading.value = false
   }
-  
-  total.value = tags.value.length
 }
+
+// 监听分页变化
+watch([currentPage, pageSize], () => {
+  loadTags()
+})
 
 const handleAdd = () => {
   dialogTitle.value = '添加标签'
   formData.value = {
+    id: undefined,
     name: '',
-    category: '',
     color: '#409EFF',
     description: ''
   }
@@ -171,51 +125,72 @@ const handleAdd = () => {
 
 const handleEdit = (row) => {
   dialogTitle.value = '编辑标签'
-  formData.value = { ...row }
+  formData.value = { 
+    id: row.id,
+    name: row.name,
+    color: row.color,
+    description: row.description || ''
+  }
   dialogVisible.value = true
 }
 
-const handleDelete = (row) => {
-  if (row.usage_count > 0) {
-    ElMessageBox.confirm(
-      `该标签已被使用 ${row.usage_count} 次，删除后相关事件的标签也会被移除，确定删除吗？`, 
-      '警告', 
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    ).then(() => {
-      // TODO: 调用 API 删除标签
-      ElMessage.success('删除成功')
-      loadTags()
-    })
-  } else {
-    ElMessageBox.confirm('确定删除该标签吗?', '提示', {
+const handleDelete = async (row) => {
+  const confirmMessage = row.usage_count > 0
+    ? `该标签已被使用 ${row.usage_count} 次，删除后相关事件的标签也会被移除，确定删除吗？`
+    : '确定删除该标签吗?'
+
+  try {
+    await ElMessageBox.confirm(confirmMessage, row.usage_count > 0 ? '警告' : '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
-    }).then(() => {
-      // TODO: 调用 API 删除标签
-      ElMessage.success('删除成功')
-      loadTags()
     })
+
+    // 调用 API 删除标签
+    await axios.delete(`/api/tags/${row.id}`)
+    ElMessage.success('删除成功')
+    loadTags()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除标签失败:', error)
+      ElMessage.error('删除标签失败: ' + (error.response?.data?.message || error.message))
+    }
   }
 }
 
-const handleSave = () => {
-  if (!formData.value.name) {
+const handleSave = async () => {
+  if (!formData.value.name.trim()) {
     ElMessage.warning('请输入标签名称')
     return
   }
-  if (!formData.value.category) {
-    ElMessage.warning('请选择标签分类')
-    return
+
+  try {
+    if (formData.value.id) {
+      // 更新标签
+      await axios.put(`/api/tags/${formData.value.id}`, {
+        name: formData.value.name,
+        category: 'default',
+        color: formData.value.color,
+        description: formData.value.description || null
+      })
+      ElMessage.success('更新成功')
+    } else {
+      // 创建标签
+      await axios.post('/api/tags', {
+        name: formData.value.name,
+        category: 'default',
+        color: formData.value.color,
+        description: formData.value.description || null
+      })
+      ElMessage.success('创建成功')
+    }
+    
+    dialogVisible.value = false
+    loadTags()
+  } catch (error) {
+    console.error('保存标签失败:', error)
+    ElMessage.error('保存失败: ' + (error.response?.data?.message || error.message))
   }
-  // TODO: 调用 API 保存标签
-  ElMessage.success('保存成功')
-  dialogVisible.value = false
-  loadTags()
 }
 
 onMounted(() => {

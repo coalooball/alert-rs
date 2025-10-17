@@ -51,11 +51,6 @@
             {{ getAlarmSubtypeName(row.alarm_subtype) }}
           </template>
         </el-table-column>
-        <el-table-column prop="src_ip" label="源IP" width="150" />
-        <el-table-column prop="src_port" label="源端口" width="100" />
-        <el-table-column prop="dst_ip" label="目标IP" width="150" />
-        <el-table-column prop="dst_port" label="目标端口" width="100" />
-        <el-table-column prop="protocol" label="协议" width="100" />
         <el-table-column prop="sample_original_name" label="样本名称" width="200" show-overflow-tooltip />
         <el-table-column prop="file_type" label="文件类型" width="120" />
         <el-table-column prop="file_size" label="文件大小" width="120">
@@ -65,6 +60,11 @@
         </el-table-column>
         <el-table-column prop="sample_family" label="样本家族" width="150" show-overflow-tooltip />
         <el-table-column prop="md5" label="MD5" width="280" show-overflow-tooltip />
+        <el-table-column prop="src_ip" label="源IP" width="150" />
+        <el-table-column prop="src_port" label="源端口" width="100" />
+        <el-table-column prop="dst_ip" label="目标IP" width="150" />
+        <el-table-column prop="dst_port" label="目标端口" width="100" />
+        <el-table-column prop="protocol" label="协议" width="100" />
         <el-table-column prop="created_at" label="创建时间" width="180" />
         <el-table-column label="操作" width="100" fixed="right" align="center">
           <template #default="{ row }">

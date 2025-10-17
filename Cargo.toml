@@ -46,3 +46,8 @@ sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid"
 uuid = { version = "1", features = ["v4", "serde", "fast-rng"] }
 anyhow = "1"
 futures = "0.3"
+
+# DSL 解析
+pest = "2.7"
+pest_derive = "2.7"
+lazy_static = "1.4"

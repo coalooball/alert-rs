@@ -102,18 +102,21 @@
       width="80%" 
       :close-on-click-modal="false"
     >
-      <el-form :model="formData" label-width="150px" v-if="formData">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="记录ID">
-              <el-input v-model="formData.id" disabled />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="事件ID">
-              <el-input v-model.number="formData.event_id" />
-            </el-form-item>
-          </el-col>
+      <el-tabs v-model="activeTab" type="border-card">
+        <!-- 事件详情标签页 -->
+        <el-tab-pane label="事件详情" name="details">
+          <el-form :model="formData" label-width="150px" v-if="formData">
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="记录ID">
+                  <el-input v-model="formData.id" disabled />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="事件ID">
+                  <el-input v-model.number="formData.event_id" />
+                </el-form-item>
+              </el-col>
           
           <el-col :span="12">
             <el-form-item label="系统编号">
@@ -372,13 +375,41 @@
             </el-form-item>
           </el-col>
           
-          <el-col :span="12">
-            <el-form-item label="创建时间">
-              <el-input v-model="formData.created_at" disabled />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
+              <el-col :span="12">
+                <el-form-item label="创建时间">
+                  <el-input v-model="formData.created_at" disabled />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </el-form>
+        </el-tab-pane>
+
+        <!-- 关联告警标签页 -->
+        <el-tab-pane label="关联告警" name="alerts">
+          <div v-if="formData && formData.merge_alerts">
+            <el-table 
+              :data="parseRelatedAlerts" 
+              border 
+              stripe 
+              style="width: 100%"
+              max-height="500"
+            >
+              <el-table-column type="index" label="序号" width="60" />
+              <el-table-column prop="alert_id" label="告警ID" width="120" show-overflow-tooltip />
+              <el-table-column prop="alert_name" label="告警名称" min-width="200" show-overflow-tooltip />
+              <el-table-column prop="alert_time" label="告警时间" width="180" />
+              <el-table-column prop="source" label="来源" width="120" />
+              <el-table-column label="详情" width="100" align="center">
+                <template #default="{ row }">
+                  <el-button type="text" size="small" @click="showAlertDetail(row)">查看</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <el-empty v-if="parseRelatedAlerts.length === 0" description="暂无关联告警" />
+          </div>
+          <el-empty v-else description="暂无关联告警数据" />
+        </el-tab-pane>
+      </el-tabs>
       
       <template #footer>
         <span class="dialog-footer">
@@ -414,6 +445,7 @@ const dialogVisible = ref(false)
 const formData = ref(null)
 const saving = ref(false)
 const submitting = ref(false)
+const activeTab = ref('details')
 const searchForm = ref({
   name: '',
   attacker: '',
@@ -424,6 +456,33 @@ const searchForm = ref({
 
 const isReviewed = computed(() => {
   return formData.value?.dispose_status === '已审核'
+})
+
+// 解析关联告警数据
+const parseRelatedAlerts = computed(() => {
+  if (!formData.value?.merge_alerts) return []
+  
+  try {
+    let alerts = formData.value.merge_alerts
+    if (typeof alerts === 'string') {
+      alerts = JSON.parse(alerts)
+    }
+    
+    if (Array.isArray(alerts)) {
+      return alerts.map((alert, index) => ({
+        id: index,
+        alert_id: alert.alert_id || alert.id || '-',
+        alert_name: alert.alert_name || alert.name || '-',
+        alert_time: alert.alert_time || alert.time || alert.timestamp || '-',
+        source: alert.source || alert.data_source || '-',
+        ...alert
+      }))
+    }
+    return []
+  } catch (error) {
+    console.error('解析关联告警失败:', error)
+    return []
+  }
 })
 
 const loadData = async () => {
@@ -524,7 +583,18 @@ const showReview = (row) => {
     found_time: formatTimeForEdit(row.found_time),
     first_found_time: formatTimeForEdit(row.first_found_time)
   }
+  // 重置为事件详情标签页
+  activeTab.value = 'details'
   dialogVisible.value = true
+}
+
+// 查看关联告警详情
+const showAlertDetail = (alert) => {
+  ElMessage.info({
+    message: `告警详情: ${JSON.stringify(alert, null, 2)}`,
+    duration: 5000,
+    showClose: true
+  })
 }
 
 const handleSave = async () => {
@@ -695,5 +765,20 @@ onMounted(() => {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+}
+
+:deep(.el-tabs--border-card) {
+  border: none;
+  box-shadow: none;
+}
+
+:deep(.el-tabs__content) {
+  padding: 20px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+:deep(.el-dialog__body) {
+  padding: 10px 20px;
 }
 </style>

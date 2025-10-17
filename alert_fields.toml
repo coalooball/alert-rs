@@ -1,0 +1,120 @@
+# 告警字段定义
+# 字段格式: 字段名 = { type = "类型", optional = true/false, description = "描述" }
+
+# ==================== 主机行为告警 (HostBehaviorAlert) ====================
+[host_behavior_alert]
+alarm_id = { type = "String", optional = true, description = "告警ID" }
+alarm_date = { type = "i64", optional = true, description = "告警时间（时间戳）" }
+alarm_severity = { type = "u8", optional = true, description = "告警严重程度" }
+alarm_name = { type = "String", optional = true, description = "告警名称" }
+alarm_description = { type = "String", optional = true, description = "告警描述" }
+alarm_type = { type = "u8", optional = false, description = "告警类型" }
+alarm_subtype = { type = "u16", optional = false, description = "告警子类型" }
+source = { type = "u8", optional = false, description = "告警来源" }
+control_rule_id = { type = "String", optional = true, description = "控制规则ID" }
+control_task_id = { type = "String", optional = true, description = "控制任务ID" }
+procedure_technique_id = { type = "Vec<String>", optional = true, description = "攻击技术ID列表" }
+session_id = { type = "String", optional = true, description = "会话ID" }
+ip_version = { type = "u8", optional = true, description = "IP版本（4或6）" }
+src_ip = { type = "String", optional = true, description = "源IP地址" }
+src_port = { type = "u16", optional = true, description = "源端口" }
+dst_ip = { type = "String", optional = true, description = "目标IP地址" }
+dst_port = { type = "u16", optional = true, description = "目标端口" }
+protocol = { type = "String", optional = true, description = "网络协议" }
+terminal_id = { type = "String", optional = true, description = "终端ID" }
+source_file_path = { type = "String", optional = true, description = "源文件路径" }
+host_name = { type = "String", optional = true, description = "主机名" }
+terminal_ip = { type = "String", optional = true, description = "终端IP地址" }
+user_account = { type = "String", optional = true, description = "用户账号" }
+terminal_os = { type = "String", optional = true, description = "终端操作系统" }
+dst_process_md5 = { type = "String", optional = true, description = "目标进程MD5" }
+dst_process_path = { type = "String", optional = true, description = "目标进程路径" }
+dst_process_cli = { type = "String", optional = true, description = "目标进程命令行" }
+src_process_md5 = { type = "String", optional = true, description = "源进程MD5" }
+src_process_path = { type = "String", optional = true, description = "源进程路径" }
+src_process_cli = { type = "String", optional = true, description = "源进程命令行" }
+register_key_name = { type = "String", optional = true, description = "注册表键名" }
+register_key_value = { type = "String", optional = true, description = "注册表键值" }
+register_path = { type = "String", optional = true, description = "注册表路径" }
+file_name = { type = "String", optional = true, description = "文件名" }
+file_md5 = { type = "String", optional = true, description = "文件MD5哈希" }
+file_path = { type = "String", optional = true, description = "文件路径" }
+data = { type = "Json", optional = true, description = "扩展数据" }
+
+# ==================== 恶意样本告警 (MaliciousSampleAlert) ====================
+[malicious_sample_alert]
+alarm_id = { type = "String", optional = true, description = "告警ID" }
+alarm_date = { type = "i64", optional = true, description = "告警时间（时间戳）" }
+alarm_severity = { type = "u8", optional = true, description = "告警严重程度" }
+alarm_name = { type = "String", optional = true, description = "告警名称" }
+alarm_description = { type = "String", optional = true, description = "告警描述" }
+alarm_type = { type = "u8", optional = false, description = "告警类型" }
+alarm_subtype = { type = "u16", optional = false, description = "告警子类型" }
+source = { type = "u8", optional = false, description = "告警来源" }
+control_rule_id = { type = "String", optional = true, description = "控制规则ID" }
+control_task_id = { type = "String", optional = true, description = "控制任务ID" }
+procedure_technique_id = { type = "Vec<String>", optional = true, description = "攻击技术ID列表" }
+session_id = { type = "String", optional = true, description = "会话ID" }
+ip_version = { type = "u8", optional = true, description = "IP版本（4或6）" }
+src_ip = { type = "String", optional = true, description = "源IP地址" }
+src_port = { type = "u16", optional = true, description = "源端口" }
+dst_ip = { type = "String", optional = true, description = "目标IP地址" }
+dst_port = { type = "u16", optional = true, description = "目标端口" }
+protocol = { type = "String", optional = true, description = "网络协议" }
+terminal_id = { type = "String", optional = true, description = "终端ID" }
+source_file_path = { type = "String", optional = true, description = "源文件路径" }
+sample_source = { type = "u8", optional = true, description = "样本来源" }
+md5 = { type = "String", optional = true, description = "MD5哈希" }
+sha1 = { type = "String", optional = true, description = "SHA1哈希" }
+sha256 = { type = "String", optional = true, description = "SHA256哈希" }
+sha512 = { type = "String", optional = true, description = "SHA512哈希" }
+ssdeep = { type = "String", optional = true, description = "SSDeep模糊哈希" }
+sample_original_name = { type = "String", optional = true, description = "样本原始名称" }
+sample_description = { type = "String", optional = true, description = "样本描述" }
+sample_family = { type = "String", optional = true, description = "样本家族" }
+apt_group = { type = "String", optional = true, description = "APT组织" }
+sample_alarm_engine = { type = "Vec<u8>", optional = true, description = "告警引擎列表" }
+target_platform = { type = "String", optional = true, description = "目标平台" }
+file_type = { type = "String", optional = true, description = "文件类型" }
+file_size = { type = "u64", optional = true, description = "文件大小（字节）" }
+language = { type = "String", optional = true, description = "编程语言" }
+rule = { type = "String", optional = true, description = "匹配规则" }
+target_content = { type = "String", optional = true, description = "目标内容" }
+compile_date = { type = "i64", optional = true, description = "编译时间（时间戳）" }
+last_analy_date = { type = "i64", optional = true, description = "最后分析时间（时间戳）" }
+sample_alarm_detail = { type = "String", optional = true, description = "样本告警详情" }
+data = { type = "Json", optional = true, description = "扩展数据" }
+
+# ==================== 网络攻击告警 (NetworkAttackAlert) ====================
+[network_attack_alert]
+alarm_id = { type = "String", optional = true, description = "告警ID" }
+alarm_date = { type = "i64", optional = true, description = "告警时间（时间戳）" }
+alarm_severity = { type = "u8", optional = true, description = "告警严重程度" }
+alarm_name = { type = "String", optional = true, description = "告警名称" }
+alarm_description = { type = "String", optional = true, description = "告警描述" }
+alarm_type = { type = "u8", optional = false, description = "告警类型" }
+alarm_subtype = { type = "u16", optional = false, description = "告警子类型" }
+source = { type = "u8", optional = false, description = "告警来源" }
+control_rule_id = { type = "String", optional = true, description = "控制规则ID" }
+control_task_id = { type = "String", optional = true, description = "控制任务ID" }
+procedure_technique_id = { type = "Vec<String>", optional = true, description = "攻击技术ID列表" }
+session_id = { type = "String", optional = true, description = "会话ID" }
+ip_version = { type = "u8", optional = true, description = "IP版本（4或6）" }
+src_ip = { type = "String", optional = true, description = "源IP地址" }
+src_port = { type = "u16", optional = true, description = "源端口" }
+dst_ip = { type = "String", optional = true, description = "目标IP地址" }
+dst_port = { type = "u16", optional = true, description = "目标端口" }
+protocol = { type = "String", optional = true, description = "网络协议" }
+terminal_id = { type = "String", optional = true, description = "终端ID" }
+source_file_path = { type = "String", optional = true, description = "源文件路径" }
+signature_id = { type = "String", optional = true, description = "特征ID" }
+attack_payload = { type = "String", optional = true, description = "攻击载荷" }
+attack_stage = { type = "String", optional = true, description = "攻击阶段" }
+attack_ip = { type = "String", optional = true, description = "攻击者IP" }
+attacked_ip = { type = "String", optional = true, description = "被攻击IP" }
+apt_group = { type = "String", optional = true, description = "APT组织" }
+vul_type = { type = "String", optional = true, description = "漏洞类型" }
+cve_id = { type = "String", optional = true, description = "CVE编号" }
+vul_desc = { type = "String", optional = true, description = "漏洞描述" }
+data = { type = "Json", optional = true, description = "扩展数据" }
+

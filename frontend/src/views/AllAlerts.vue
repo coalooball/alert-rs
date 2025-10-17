@@ -11,9 +11,9 @@
         <el-tab-pane label="终端日志" name="host-behavior">
           <HostBehavior />
         </el-tab-pane>
-        <el-tab-pane label="无效告警" name="invalid-alert">
+        <!-- <el-tab-pane label="无效告警" name="invalid-alert">
           <InvalidAlert />
-        </el-tab-pane>
+        </el-tab-pane> -->
       </el-tabs>
     </el-card>
   </div>

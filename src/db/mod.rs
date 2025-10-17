@@ -1,5 +1,6 @@
 pub mod threat_event;
 pub mod mock_threat_events;
+pub mod tag_management;
 
 use anyhow::Result;
 use sqlx::{PgPool, postgres::PgPoolOptions};
@@ -180,6 +181,9 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<PgPool> {
     // 威胁事件表
     threat_event::create_threat_event_table(&pool).await?;
 
+    // 标签管理表
+    tag_management::create_tag_table(&pool).await?;
+
     Ok(pool)
 }
 
@@ -198,6 +202,7 @@ pub async fn reset_database(pool: &PgPool) -> Result<()> {
         .execute(pool)
         .await?;
     threat_event::drop_threat_event_table(pool).await?;
+    tag_management::drop_tag_table(pool).await?;
     Ok(())
 }
 
