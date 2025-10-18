@@ -45,3 +45,16 @@ export const getThreatEvents = (page = 1, pageSize = 20) => {
 export const updateThreatEvent = (id, data) => {
   return api.put(`/threat-events/${id}`, data)
 }
+
+// 根据收敛告警ID查询原始告警
+export const getRawNetworkAttacksByConvergedId = (convergedId) => {
+  return api.get(`/network-attacks/${convergedId}/raw`)
+}
+
+export const getRawMaliciousSamplesByConvergedId = (convergedId) => {
+  return api.get(`/malicious-samples/${convergedId}/raw`)
+}
+
+export const getRawHostBehaviorsByConvergedId = (convergedId) => {
+  return api.get(`/host-behaviors/${convergedId}/raw`)
+}

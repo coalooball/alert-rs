@@ -231,32 +231,21 @@ const loadAlertFields = async () => {
   }
 }
 
-const loadRules = () => {
-  // TODO: 调用 API 加载过滤规则
-  // 示例数据
-  rules.value = [
-    { 
-      id: 1, 
-      name: '过滤低危事件', 
-      alert_type: 'network_attack',
-      alert_subtype: '01001',
-      field: 'alarm_severity', 
-      operator: 'eq', 
-      value: '1', 
-      enabled: true 
-    },
-    { 
-      id: 2, 
-      name: '过滤测试IP', 
-      alert_type: 'malicious_sample',
-      alert_subtype: '02001',
-      field: 'src_ip', 
-      operator: 'contains', 
-      value: '192.168.1', 
-      enabled: true 
+const loadRules = async () => {
+  try {
+    const response = await fetch(`/api/rules/filter?page=${currentPage.value}&page_size=${pageSize.value}`)
+    const result = await response.json()
+    
+    if (result.success && result.data) {
+      rules.value = result.data.items
+      total.value = result.data.total
+    } else {
+      ElMessage.error(result.error || '加载过滤规则失败')
     }
-  ]
-  total.value = rules.value.length
+  } catch (error) {
+    console.error('加载过滤规则失败:', error)
+    ElMessage.error('加载过滤规则失败')
+  }
 }
 
 const handleAdd = () => {
@@ -284,14 +273,27 @@ const handleDelete = (row) => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
-    // TODO: 调用 API 删除规则
-    ElMessage.success('删除成功')
-    loadRules()
-  })
+  }).then(async () => {
+    try {
+      const response = await fetch(`/api/rules/filter/${row.id}`, {
+        method: 'DELETE'
+      })
+      const result = await response.json()
+      
+      if (result.success) {
+        ElMessage.success('删除成功')
+        loadRules()
+      } else {
+        ElMessage.error(result.error || '删除失败')
+      }
+    } catch (error) {
+      console.error('删除失败:', error)
+      ElMessage.error('删除失败')
+    }
+  }).catch(() => {})
 }
 
-const handleSave = () => {
+const handleSave = async () => {
   if (!formData.value.name) {
     ElMessage.warning('请输入规则名称')
     return
@@ -317,10 +319,40 @@ const handleSave = () => {
     return
   }
   
-  // TODO: 调用 API 保存规则
-  ElMessage.success('保存成功')
-  dialogVisible.value = false
-  loadRules()
+  try {
+    const isEdit = !!formData.value.id
+    const url = isEdit ? `/api/rules/filter/${formData.value.id}` : '/api/rules/filter'
+    const method = isEdit ? 'PUT' : 'POST'
+    
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: formData.value.name,
+        alert_type: formData.value.alert_type,
+        alert_subtype: formData.value.alert_subtype,
+        field: formData.value.field,
+        operator: formData.value.operator,
+        value: formData.value.value,
+        enabled: formData.value.enabled
+      })
+    })
+    
+    const result = await response.json()
+    
+    if (result.success) {
+      ElMessage.success('保存成功')
+      dialogVisible.value = false
+      loadRules()
+    } else {
+      ElMessage.error(result.error || '保存失败')
+    }
+  } catch (error) {
+    console.error('保存失败:', error)
+    ElMessage.error('保存失败')
+  }
 }
 
 // 获取告警类型名称

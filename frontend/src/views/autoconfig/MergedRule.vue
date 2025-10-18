@@ -1,5 +1,5 @@
 <template>
-  <div class="convergence-rule-container">
+  <div class="merged-rule-container">
     <div class="toolbar">
       <el-button type="primary" @click="handleAdd">添加规则</el-button>
       <el-button @click="loadRules">刷新</el-button>
@@ -8,6 +8,13 @@
 
     <el-table :data="rules" stripe style="width: 100%; margin-top: 20px;">
       <el-table-column prop="id" label="规则ID" width="80" />
+      <el-table-column prop="rule_type" label="规则类型" width="100">
+        <template #default="scope">
+          <el-tag :type="scope.row.rule_type === 'convergence' ? 'primary' : 'success'">
+            {{ scope.row.rule_type === 'convergence' ? '收敛' : '关联' }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="name" label="规则名称" width="200" />
       <el-table-column prop="dsl_rule" label="DSL规则" :show-overflow-tooltip="true">
         <template #default="scope">
@@ -41,6 +48,12 @@
     <!-- 添加/编辑对话框 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="800px">
       <el-form :model="formData" label-width="100px">
+        <el-form-item label="规则类型">
+          <el-select v-model="formData.rule_type" placeholder="请选择规则类型" :disabled="isEdit" style="width: 100%;">
+            <el-option label="收敛规则" value="convergence" />
+            <el-option label="关联规则" value="correlation" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="规则名称">
           <el-input v-model="formData.name" placeholder="请输入规则名称" />
         </el-form-item>
@@ -49,12 +62,12 @@
             v-model="formData.dsl_rule" 
             type="textarea" 
             :rows="12" 
-            placeholder="请输入收敛规则的DSL表达式"
+            :placeholder="dslPlaceholder"
             class="dsl-editor"
           />
           <div class="dsl-hint">
             <el-link type="primary" @click="insertExample">插入示例</el-link>
-            <span class="hint-text">收敛规则用于在时间窗口内对满足条件的告警进行分组合并</span>
+            <span class="hint-text">{{ ruleTypeHint }}</span>
           </div>
           <!-- 编译测试结果 -->
           <el-alert
@@ -91,79 +104,121 @@
     </el-dialog>
 
     <!-- DSL 语法帮助对话框 -->
-    <el-dialog v-model="showDslHelp" title="收敛规则 DSL 语法帮助" width="900px">
+    <el-dialog v-model="showDslHelp" title="收敛与关联规则 DSL 语法帮助" width="900px">
       <div class="dsl-help">
-        <h3>DSL 规则语法</h3>
-        <p>收敛规则用于在指定时间窗口内，对满足条件的告警按照指定字段分组，当组内告警数量超过阈值时触发收敛。</p>
-        
-        <h4>规则结构</h4>
-        <pre><code>CONVERGE
+        <el-tabs v-model="helpTab">
+          <el-tab-pane label="收敛规则" name="convergence">
+            <h3>收敛规则 DSL 语法</h3>
+            <p>收敛规则用于在指定时间窗口内，对满足条件的告警按照指定字段分组，当组内告警数量超过阈值时触发收敛。</p>
+            
+            <h4>规则结构</h4>
+            <pre><code>CONVERGE
   WHERE &lt;条件表达式&gt;
   GROUP BY &lt;字段列表&gt;
   WINDOW &lt;时间窗口&gt;
   THRESHOLD &lt;阈值&gt;</code></pre>
 
-        <h4>可用字段（根据告警类型）</h4>
-        <ul>
-          <li><strong>通用字段：</strong>alarm_id, alarm_date, alarm_severity, alarm_name, alarm_type, alarm_subtype, source</li>
-          <li><strong>网络字段：</strong>src_ip, src_port, dst_ip, dst_port, protocol, session_id</li>
-          <li><strong>主机字段：</strong>host_name, terminal_ip, user_account, terminal_os, process_path</li>
-          <li><strong>样本字段：</strong>md5, sha256, sample_family, apt_group, file_type</li>
-        </ul>
+            <h4>可用字段（根据告警类型）</h4>
+            <ul>
+              <li><strong>通用字段：</strong>alarm_id, alarm_date, alarm_severity, alarm_name, alarm_type, alarm_subtype, source</li>
+              <li><strong>网络字段：</strong>src_ip, src_port, dst_ip, dst_port, protocol, session_id</li>
+              <li><strong>主机字段：</strong>host_name, terminal_ip, user_account, terminal_os, process_path</li>
+              <li><strong>样本字段：</strong>md5, sha256, sample_family, apt_group, file_type</li>
+            </ul>
 
-        <h4>条件操作符</h4>
-        <ul>
-          <li><code>==</code> 等于</li>
-          <li><code>!=</code> 不等于</li>
-          <li><code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code> 大于、小于、大于等于、小于等于</li>
-          <li><code>CONTAINS</code> 包含</li>
-          <li><code>REGEX</code> 正则匹配</li>
-          <li><code>IN</code> 在列表中</li>
-          <li><code>AND</code>, <code>OR</code>, <code>NOT</code> 逻辑运算符</li>
-        </ul>
-
-        <h4>时间窗口单位</h4>
-        <ul>
-          <li><code>m</code> 或 <code>minutes</code> - 分钟</li>
-          <li><code>h</code> 或 <code>hours</code> - 小时</li>
-          <li><code>d</code> 或 <code>days</code> - 天</li>
-        </ul>
-
-        <h4>示例 1：相同源IP的高危告警收敛</h4>
-        <pre><code>CONVERGE
+            <h4>示例：相同源IP的高危告警收敛</h4>
+            <pre><code>CONVERGE
   WHERE alarm_severity >= 3
   GROUP BY src_ip, alarm_type
   WINDOW 5m
   THRESHOLD 10</code></pre>
 
-        <h4>示例 2：同一主机的进程行为告警收敛</h4>
-        <pre><code>CONVERGE
+            <h4>示例：同一主机的进程行为告警收敛</h4>
+            <pre><code>CONVERGE
   WHERE alarm_type == 2 AND host_name REGEX "^server-.*"
   GROUP BY host_name, user_account
   WINDOW 10m
   THRESHOLD 20</code></pre>
+          </el-tab-pane>
 
-        <h4>示例 3：APT组织相关告警收敛</h4>
-        <pre><code>CONVERGE
-  WHERE apt_group != "" AND alarm_severity >= 2
-  GROUP BY apt_group, dst_ip
+          <el-tab-pane label="关联规则" name="correlation">
+            <h3>关联规则 DSL 语法</h3>
+            <p>关联规则用于在指定时间窗口内检测多个告警之间的关联关系，当检测到符合条件的告警序列时生成关联告警。</p>
+            
+            <h4>规则结构</h4>
+            <pre><code>CORRELATE
+  EVENT &lt;事件别名1&gt; WHERE &lt;条件1&gt;
+  EVENT &lt;事件别名2&gt; WHERE &lt;条件2&gt;
+  [EVENT &lt;事件别名3&gt; WHERE &lt;条件3&gt;]
+  JOIN ON &lt;关联条件&gt;
+  WINDOW &lt;时间窗口&gt;
+  GENERATE
+    SEVERITY &lt;威胁等级&gt;
+    NAME &lt;告警名称&gt;
+    DESCRIPTION &lt;告警描述&gt;</code></pre>
+
+            <h4>示例：攻击链关联检测</h4>
+            <pre><code>CORRELATE
+  EVENT attack WHERE alarm_type == 1 AND alarm_severity >= 2
+  EVENT behavior WHERE alarm_type == 2 AND dst_process_path CONTAINS "cmd.exe"
+  JOIN ON attack.dst_ip == behavior.terminal_ip
+  WINDOW 10m
+  GENERATE
+    SEVERITY 3
+    NAME "检测到攻击链活动"
+    DESCRIPTION "网络攻击后发现可疑主机行为"</code></pre>
+
+            <h4>示例：横向移动检测</h4>
+            <pre><code>CORRELATE
+  EVENT login WHERE alarm_subtype == 2001 AND alarm_name CONTAINS "登录"
+  EVENT access WHERE alarm_subtype == 2002 AND alarm_name CONTAINS "访问"
+  EVENT lateral WHERE alarm_subtype == 1005
+  JOIN ON login.user_account == access.user_account 
+       AND access.dst_ip == lateral.src_ip
   WINDOW 30m
-  THRESHOLD 5</code></pre>
+  GENERATE
+    SEVERITY 4
+    NAME "检测到横向移动"
+    DESCRIPTION "发现异常登录后的横向移动行为"</code></pre>
+          </el-tab-pane>
 
-        <h4>示例 4：特定端口扫描收敛</h4>
-        <pre><code>CONVERGE
-  WHERE alarm_subtype IN (1001, 1002, 1003)
-    AND dst_port IN (22, 3389, 445, 135)
-  GROUP BY src_ip, dst_port
-  WINDOW 15m
-  THRESHOLD 50</code></pre>
+          <el-tab-pane label="通用说明" name="common">
+            <h3>通用说明</h3>
+            
+            <h4>条件操作符</h4>
+            <ul>
+              <li><code>==</code> 等于</li>
+              <li><code>!=</code> 不等于</li>
+              <li><code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code> 大于、小于、大于等于、小于等于</li>
+              <li><code>CONTAINS</code> 包含</li>
+              <li><code>REGEX</code> 正则匹配</li>
+              <li><code>IN</code> 在列表中</li>
+              <li><code>AND</code>, <code>OR</code>, <code>NOT</code> 逻辑运算符</li>
+            </ul>
+
+            <h4>时间窗口单位</h4>
+            <ul>
+              <li><code>m</code> 或 <code>minutes</code> - 分钟</li>
+              <li><code>h</code> 或 <code>hours</code> - 小时</li>
+              <li><code>d</code> 或 <code>days</code> - 天</li>
+            </ul>
+
+            <h4>威胁等级（仅关联规则）</h4>
+            <ul>
+              <li><code>1</code> - 低危</li>
+              <li><code>2</code> - 中危</li>
+              <li><code>3</code> - 高危</li>
+              <li><code>4</code> - 严重</li>
+            </ul>
+          </el-tab-pane>
+        </el-tabs>
       </div>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Document } from '@element-plus/icons-vue'
 
@@ -174,52 +229,108 @@ const total = ref(0)
 const dialogVisible = ref(false)
 const dialogTitle = ref('添加规则')
 const showDslHelp = ref(false)
+const helpTab = ref('convergence')
 const compiling = ref(false)
 const compileResult = ref(null)
+const isEdit = ref(false)
 const formData = ref({
+  rule_type: 'convergence',
   name: '',
   dsl_rule: '',
   description: '',
   enabled: true
 })
 
-const dslExample = `CONVERGE
+const convergenceExample = `CONVERGE
   WHERE alarm_severity >= 3
   GROUP BY src_ip, alarm_type
   WINDOW 5m
   THRESHOLD 10`
 
+const correlationExample = `CORRELATE
+  EVENT attack WHERE alarm_type == 1 AND alarm_severity >= 2
+  EVENT behavior WHERE alarm_type == 2 AND dst_process_path CONTAINS "cmd.exe"
+  JOIN ON attack.dst_ip == behavior.terminal_ip
+  WINDOW 10m
+  GENERATE
+    SEVERITY 3
+    NAME "检测到攻击链活动"
+    DESCRIPTION "网络攻击后发现可疑主机行为"`
+
+const dslPlaceholder = computed(() => {
+  return formData.value.rule_type === 'convergence' 
+    ? '请输入收敛规则的DSL表达式' 
+    : '请输入关联规则的DSL表达式'
+})
+
+const ruleTypeHint = computed(() => {
+  return formData.value.rule_type === 'convergence'
+    ? '收敛规则用于在时间窗口内对满足条件的告警进行分组合并'
+    : '关联规则用于在时间窗口内检测多个告警之间的关联关系'
+})
+
 const loadRules = async () => {
   try {
-    const response = await fetch(`/api/rules/convergence?page=${currentPage.value}&page_size=${pageSize.value}`)
-    const result = await response.json()
+    // 并行加载收敛规则和关联规则
+    const [convergenceRes, correlationRes] = await Promise.all([
+      fetch(`/api/rules/convergence?page=1&page_size=1000`),
+      fetch(`/api/rules/correlation?page=1&page_size=1000`)
+    ])
     
-    if (result.success && result.data) {
-      rules.value = result.data.items
-      total.value = result.data.total
-    } else {
-      ElMessage.error(result.error || '加载收敛规则失败')
+    const convergenceData = await convergenceRes.json()
+    const correlationData = await correlationRes.json()
+    
+    let allRules = []
+    
+    // 添加收敛规则
+    if (convergenceData.success && convergenceData.data) {
+      const convergenceRules = convergenceData.data.items.map(rule => ({
+        ...rule,
+        rule_type: 'convergence'
+      }))
+      allRules = allRules.concat(convergenceRules)
     }
+    
+    // 添加关联规则
+    if (correlationData.success && correlationData.data) {
+      const correlationRules = correlationData.data.items.map(rule => ({
+        ...rule,
+        rule_type: 'correlation'
+      }))
+      allRules = allRules.concat(correlationRules)
+    }
+    
+    // 分页处理
+    total.value = allRules.length
+    const start = (currentPage.value - 1) * pageSize.value
+    const end = start + pageSize.value
+    rules.value = allRules.slice(start, end)
+    
   } catch (error) {
-    console.error('加载收敛规则失败:', error)
-    ElMessage.error('加载收敛规则失败')
+    console.error('加载规则失败:', error)
+    ElMessage.error('加载规则失败')
   }
 }
 
 const handleAdd = () => {
   dialogTitle.value = '添加规则'
+  isEdit.value = false
   formData.value = {
+    rule_type: 'convergence',
     name: '',
     dsl_rule: '',
     description: '',
     enabled: true
   }
+  compileResult.value = null
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
   dialogTitle.value = '编辑规则'
+  isEdit.value = true
   formData.value = { ...row }
+  compileResult.value = null
   dialogVisible.value = true
 }
 
@@ -230,7 +341,8 @@ const handleDelete = (row) => {
     type: 'warning'
   }).then(async () => {
     try {
-      const response = await fetch(`/api/rules/convergence/${row.id}`, {
+      const apiPath = row.rule_type === 'convergence' ? 'convergence' : 'correlation'
+      const response = await fetch(`/api/rules/${apiPath}/${row.id}`, {
         method: 'DELETE'
       })
       const result = await response.json()
@@ -249,6 +361,10 @@ const handleDelete = (row) => {
 }
 
 const handleSave = async () => {
+  if (!formData.value.rule_type) {
+    ElMessage.warning('请选择规则类型')
+    return
+  }
   if (!formData.value.name) {
     ElMessage.warning('请输入规则名称')
     return
@@ -259,9 +375,10 @@ const handleSave = async () => {
   }
   
   try {
-    const isEdit = !!formData.value.id
-    const url = isEdit ? `/api/rules/convergence/${formData.value.id}` : '/api/rules/convergence'
-    const method = isEdit ? 'PUT' : 'POST'
+    const apiPath = formData.value.rule_type === 'convergence' ? 'convergence' : 'correlation'
+    const isEditMode = !!formData.value.id
+    const url = isEditMode ? `/api/rules/${apiPath}/${formData.value.id}` : `/api/rules/${apiPath}`
+    const method = isEditMode ? 'PUT' : 'POST'
     
     const response = await fetch(url, {
       method,
@@ -292,7 +409,9 @@ const handleSave = async () => {
 }
 
 const insertExample = () => {
-  formData.value.dsl_rule = dslExample
+  formData.value.dsl_rule = formData.value.rule_type === 'convergence' 
+    ? convergenceExample 
+    : correlationExample
   compileResult.value = null
 }
 
@@ -306,7 +425,8 @@ const handleCompileTest = async () => {
   compileResult.value = null
   
   try {
-    const response = await fetch('/api/rules/convergence/compile', {
+    const apiPath = formData.value.rule_type === 'convergence' ? 'convergence' : 'correlation'
+    const response = await fetch(`/api/rules/${apiPath}/compile`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -316,7 +436,6 @@ const handleCompileTest = async () => {
       })
     })
     
-    // 检查 HTTP 状态码
     if (!response.ok) {
       throw new Error(`HTTP错误: ${response.status}`)
     }
@@ -327,7 +446,7 @@ const handleCompileTest = async () => {
       compileResult.value = {
         type: 'success',
         title: '编译成功',
-        message: result.message || 'DSL 规则语法正确，可以正常使用。已验证规则结构、字段名称和操作符。'
+        message: result.message || 'DSL 规则语法正确，可以正常使用。'
       }
       ElMessage.success('DSL 规则编译测试通过')
     } else {
@@ -355,7 +474,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.convergence-rule-container {
+.merged-rule-container {
   padding: 20px;
 }
 
@@ -447,4 +566,3 @@ onMounted(() => {
   gap: 10px;
 }
 </style>
-

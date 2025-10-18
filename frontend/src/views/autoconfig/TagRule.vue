@@ -253,34 +253,21 @@ const loadAlertFields = async () => {
   }
 }
 
-const loadRules = () => {
-  // TODO: 调用 API 加载标签规则
-  // 示例数据
-  rules.value = [
-    { 
-      id: 1, 
-      name: '高危事件标记',
-      alert_type: 'network_attack',
-      alert_subtype: '01009',
-      condition_field: 'alarm_severity', 
-      condition_operator: 'eq', 
-      condition_value: '3', 
-      tags: ['高优先级', '需人工审核'],
-      enabled: true 
-    },
-    { 
-      id: 2, 
-      name: 'APT攻击标记',
-      alert_type: 'network_attack',
-      alert_subtype: '01009',
-      condition_field: 'apt_group', 
-      condition_operator: 'ne', 
-      condition_value: '', 
-      tags: ['APT攻击', '高优先级'],
-      enabled: true 
+const loadRules = async () => {
+  try {
+    const response = await fetch(`/api/rules/tag?page=${currentPage.value}&page_size=${pageSize.value}`)
+    const result = await response.json()
+    
+    if (result.success && result.data) {
+      rules.value = result.data.items
+      total.value = result.data.total
+    } else {
+      ElMessage.error(result.error || '加载标签规则失败')
     }
-  ]
-  total.value = rules.value.length
+  } catch (error) {
+    console.error('加载标签规则失败:', error)
+    ElMessage.error('加载标签规则失败')
+  }
 }
 
 const handleAdd = () => {
@@ -329,18 +316,88 @@ const handleDelete = (row) => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
-    // TODO: 调用 API 删除规则
-    ElMessage.success('删除成功')
-    loadRules()
-  })
+  }).then(async () => {
+    try {
+      const response = await fetch(`/api/rules/tag/${row.id}`, {
+        method: 'DELETE'
+      })
+      const result = await response.json()
+      
+      if (result.success) {
+        ElMessage.success('删除成功')
+        loadRules()
+      } else {
+        ElMessage.error(result.error || '删除失败')
+      }
+    } catch (error) {
+      console.error('删除失败:', error)
+      ElMessage.error('删除失败')
+    }
+  }).catch(() => {})
 }
 
-const handleSave = () => {
-  // TODO: 调用 API 保存规则
-  ElMessage.success('保存成功')
-  dialogVisible.value = false
-  loadRules()
+const handleSave = async () => {
+  if (!formData.value.name) {
+    ElMessage.warning('请输入规则名称')
+    return
+  }
+  if (!formData.value.alert_type) {
+    ElMessage.warning('请选择告警类型')
+    return
+  }
+  if (!formData.value.alert_subtype) {
+    ElMessage.warning('请选择告警子类型')
+    return
+  }
+  if (!formData.value.condition_field) {
+    ElMessage.warning('请选择条件字段')
+    return
+  }
+  if (!formData.value.condition_operator) {
+    ElMessage.warning('请选择操作符')
+    return
+  }
+  if (!formData.value.tags || formData.value.tags.length === 0) {
+    ElMessage.warning('请选择至少一个标签')
+    return
+  }
+  
+  try {
+    const isEdit = !!formData.value.id
+    const url = isEdit ? `/api/rules/tag/${formData.value.id}` : '/api/rules/tag'
+    const method = isEdit ? 'PUT' : 'POST'
+    
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: formData.value.name,
+        alert_type: formData.value.alert_type,
+        alert_subtype: formData.value.alert_subtype,
+        condition_field: formData.value.condition_field,
+        condition_operator: formData.value.condition_operator,
+        condition_value: formData.value.condition_value || '',
+        tags: formData.value.tags,
+        description: formData.value.description || null,
+        enabled: formData.value.enabled
+      })
+    })
+    
+    const result = await response.json()
+    
+    if (result.success) {
+      ElMessage.success('保存成功')
+      dialogVisible.value = false
+      loadRules()
+    } else {
+      ElMessage.error(result.error || '保存失败')
+    }
+  } catch (error) {
+    console.error('保存失败:', error)
+    ElMessage.error('保存失败')
+  }
 }
 
 onMounted(() => {

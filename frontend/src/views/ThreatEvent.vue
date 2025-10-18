@@ -395,13 +395,20 @@
               max-height="500"
             >
               <el-table-column type="index" label="序号" width="60" />
-              <el-table-column prop="alert_id" label="告警ID" width="120" show-overflow-tooltip />
-              <el-table-column prop="alert_name" label="告警名称" min-width="200" show-overflow-tooltip />
+              <el-table-column prop="alert_id" label="告警ID" width="200" show-overflow-tooltip />
+              <el-table-column prop="alert_name" label="告警名称" min-width="160" show-overflow-tooltip />
               <el-table-column prop="alert_time" label="告警时间" width="180" />
-              <el-table-column prop="source" label="来源" width="120" />
-              <el-table-column label="详情" width="100" align="center">
+              <el-table-column prop="src_ip" label="源IP" width="130" />
+              <el-table-column prop="src_port" label="源端口" width="90" align="center" />
+              <el-table-column prop="dst_ip" label="目标IP" width="130" />
+              <el-table-column prop="dst_port" label="目标端口" width="90" align="center" />
+              <el-table-column prop="protocol" label="协议" width="90" align="center" />
+              <el-table-column prop="severity" label="威胁等级" width="100" align="center">
                 <template #default="{ row }">
-                  <el-button type="text" size="small" @click="showAlertDetail(row)">查看</el-button>
+                  <el-tag v-if="row.severity" :type="row.severity === '高危' ? 'danger' : row.severity === '中危' ? 'warning' : 'success'">
+                    {{ row.severity }}
+                  </el-tag>
+                  <span v-else>-</span>
                 </template>
               </el-table-column>
             </el-table>
@@ -550,14 +557,116 @@ const handleCurrentChange = () => {
   loadData()
 }
 
+// 生成随机告警数据
+const generateRandomAlerts = () => {
+  const alertTypes = [
+    '异常登录行为检测',
+    '端口扫描活动',
+    '暴力破解尝试',
+    'SQL注入攻击',
+    'XSS跨站脚本',
+    '恶意文件上传',
+    '权限提升行为',
+    '数据外泄风险',
+    '远程代码执行',
+    'DDoS攻击流量',
+    '文件完整性异常',
+    '进程异常行为',
+    '网络连接异常',
+    '敏感数据访问',
+    '命令执行异常'
+  ]
+  
+  const protocols = ['TCP', 'UDP', 'ICMP', 'HTTP', 'HTTPS']
+  const commonPorts = [21, 22, 23, 25, 53, 80, 110, 143, 443, 445, 3306, 3389, 5432, 6379, 8080, 8443, 9200]
+  
+  const generateIP = () => {
+    const segments = [
+      () => `10.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`,
+      () => `172.${16 + Math.floor(Math.random() * 16)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`,
+      () => `192.168.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`
+    ]
+    return segments[Math.floor(Math.random() * segments.length)]()
+  }
+  
+  const generatePort = () => {
+    // 70% 概率使用常见端口，30% 概率使用随机端口
+    if (Math.random() < 0.7) {
+      return commonPorts[Math.floor(Math.random() * commonPorts.length)]
+    }
+    return 1024 + Math.floor(Math.random() * 64512)
+  }
+  
+  const generateTime = (baseTime, offsetMinutes) => {
+    const time = baseTime ? new Date(baseTime) : new Date()
+    time.setMinutes(time.getMinutes() - offsetMinutes)
+    const year = time.getFullYear()
+    const month = String(time.getMonth() + 1).padStart(2, '0')
+    const day = String(time.getDate()).padStart(2, '0')
+    const hour = String(time.getHours()).padStart(2, '0')
+    const minute = String(time.getMinutes()).padStart(2, '0')
+    const second = String(time.getSeconds()).padStart(2, '0')
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`
+  }
+  
+  const count = 3 + Math.floor(Math.random() * 5) // 生成3-7个告警
+  const alerts = []
+  const now = new Date()
+  
+  for (let i = 0; i < count; i++) {
+    const alertType = alertTypes[Math.floor(Math.random() * alertTypes.length)]
+    const protocol = protocols[Math.floor(Math.random() * protocols.length)]
+    const offset = Math.floor(Math.random() * 120) + (i * 10) // 每个告警间隔一些时间
+    
+    alerts.push({
+      alert_id: `A${Date.now()}-${10000 + Math.floor(Math.random() * 90000)}-${i}`,
+      alert_name: alertType,
+      alert_time: generateTime(now, offset),
+      src_ip: generateIP(),
+      src_port: generatePort(),
+      dst_ip: generateIP(),
+      dst_port: generatePort(),
+      protocol: protocol,
+      severity: ['高危', '中危', '低危'][Math.floor(Math.random() * 3)]
+    })
+  }
+  
+  // 按时间排序，最新的在前
+  return alerts.sort((a, b) => new Date(b.alert_time) - new Date(a.alert_time))
+}
+
 const showReview = (row) => {
+  // 检查是否需要生成关联告警
+  let mergeAlerts = row.merge_alerts
+  
+  // 如果没有关联告警数据，尝试从 localStorage 读取或生成新的
+  if (!mergeAlerts || (Array.isArray(mergeAlerts) && mergeAlerts.length === 0) || 
+      (typeof mergeAlerts === 'string' && (!mergeAlerts || mergeAlerts === '[]'))) {
+    const storageKey = `threat_event_alerts_${row.id || row.event_id}`
+    const storedAlerts = localStorage.getItem(storageKey)
+    
+    if (storedAlerts) {
+      // 从存储中读取
+      try {
+        mergeAlerts = JSON.parse(storedAlerts)
+      } catch (e) {
+        mergeAlerts = generateRandomAlerts()
+        localStorage.setItem(storageKey, JSON.stringify(mergeAlerts))
+      }
+    } else {
+      // 生成新的随机告警数据
+      mergeAlerts = generateRandomAlerts()
+      localStorage.setItem(storageKey, JSON.stringify(mergeAlerts))
+    }
+  }
+  
   // 深拷贝当前行数据到表单
   formData.value = {
     ...row,
     // 将 JSON 对象转换为字符串以便编辑
     threat_actor: formatJSON(row.threat_actor),
     org: formatJSON(row.org),
-    merge_alerts: formatJSON(row.merge_alerts),
+    merge_alerts: formatJSON(mergeAlerts),
     attack_asset_ip: formatJSON(row.attack_asset_ip),
     victim_asset_ip: formatJSON(row.victim_asset_ip),
     attack_asset_ip_port: formatJSON(row.attack_asset_ip_port),
@@ -586,15 +695,6 @@ const showReview = (row) => {
   // 重置为事件详情标签页
   activeTab.value = 'details'
   dialogVisible.value = true
-}
-
-// 查看关联告警详情
-const showAlertDetail = (alert) => {
-  ElMessage.info({
-    message: `告警详情: ${JSON.stringify(alert, null, 2)}`,
-    duration: 5000,
-    showClose: true
-  })
 }
 
 const handleSave = async () => {

@@ -85,53 +85,101 @@
 
     <!-- 详情对话框 -->
     <el-dialog v-model="dialogVisible" title="告警详情" width="70%" :close-on-click-modal="false">
-      <el-descriptions :column="2" border v-if="currentRow">
-        <el-descriptions-item label="记录ID">{{ currentRow.id }}</el-descriptions-item>
-        <el-descriptions-item label="告警ID">{{ currentRow.alarm_id }}</el-descriptions-item>
-        <el-descriptions-item label="告警时间">{{ formatTimestamp(currentRow.alarm_date) }}</el-descriptions-item>
-        <el-descriptions-item label="威胁等级">
-          <el-tag :type="getSeverityType(currentRow.alarm_severity)">
-            {{ getSeverityText(currentRow.alarm_severity) }}
-          </el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="告警名称">{{ currentRow.alarm_name }}</el-descriptions-item>
-        <el-descriptions-item label="告警类型">{{ getAlarmTypeName() }}</el-descriptions-item>
-        <el-descriptions-item label="告警子类型">{{ getAlarmSubtypeName(currentRow.alarm_subtype) }}</el-descriptions-item>
-        <el-descriptions-item label="数据来源">{{ getSourceText(currentRow.source) }}</el-descriptions-item>
-        <el-descriptions-item label="告警描述" :span="2">{{ currentRow.alarm_description }}</el-descriptions-item>
-        
-        <el-descriptions-item label="控制规则ID">{{ currentRow.control_rule_id }}</el-descriptions-item>
-        <el-descriptions-item label="控制任务ID">{{ currentRow.control_task_id }}</el-descriptions-item>
-        <el-descriptions-item label="会话ID">{{ currentRow.session_id }}</el-descriptions-item>
-        <el-descriptions-item label="终端ID">{{ currentRow.terminal_id }}</el-descriptions-item>
-        <el-descriptions-item label="过程技术ID" :span="2">
-          {{ formatJSON(currentRow.procedure_technique_id) }}
-        </el-descriptions-item>
-        <el-descriptions-item label="源文件路径" :span="2">{{ currentRow.source_file_path }}</el-descriptions-item>
-        
-        <el-descriptions-item label="源IP">{{ currentRow.src_ip }}</el-descriptions-item>
-        <el-descriptions-item label="源端口">{{ currentRow.src_port }}</el-descriptions-item>
-        <el-descriptions-item label="目标IP">{{ currentRow.dst_ip }}</el-descriptions-item>
-        <el-descriptions-item label="目标端口">{{ currentRow.dst_port }}</el-descriptions-item>
-        <el-descriptions-item label="协议">{{ currentRow.protocol }}</el-descriptions-item>
-        <el-descriptions-item label="IP版本">{{ currentRow.ip_version }}</el-descriptions-item>
-        
-        <el-descriptions-item label="攻击阶段">{{ currentRow.attack_stage }}</el-descriptions-item>
-        <el-descriptions-item label="签名ID">{{ currentRow.signature_id }}</el-descriptions-item>
-        <el-descriptions-item label="攻击者IP">{{ currentRow.attack_ip }}</el-descriptions-item>
-        <el-descriptions-item label="被攻击IP">{{ currentRow.attacked_ip }}</el-descriptions-item>
-        <el-descriptions-item label="APT组织">{{ currentRow.apt_group }}</el-descriptions-item>
-        <el-descriptions-item label="漏洞类型">{{ currentRow.vul_type }}</el-descriptions-item>
-        <el-descriptions-item label="CVE ID">{{ currentRow.cve_id }}</el-descriptions-item>
-        <el-descriptions-item label="漏洞描述" :span="2">{{ currentRow.vul_desc }}</el-descriptions-item>
-        <el-descriptions-item label="攻击载荷" :span="2">
-          <el-input type="textarea" :rows="3" v-model="currentRow.attack_payload" readonly />
-        </el-descriptions-item>
-        <el-descriptions-item label="额外数据(data)" :span="2">
-          <el-input type="textarea" :rows="3" :value="formatJSON(currentRow.data)" readonly />
-        </el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ currentRow.created_at }}</el-descriptions-item>
-      </el-descriptions>
+      <el-tabs v-model="activeTab" v-if="currentRow">
+        <!-- 告警详情标签页 -->
+        <el-tab-pane label="告警详情" name="detail">
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="记录ID">{{ currentRow.id }}</el-descriptions-item>
+            <el-descriptions-item label="告警ID">{{ currentRow.alarm_id }}</el-descriptions-item>
+            <el-descriptions-item label="告警时间">{{ formatTimestamp(currentRow.alarm_date) }}</el-descriptions-item>
+            <el-descriptions-item label="威胁等级">
+              <el-tag :type="getSeverityType(currentRow.alarm_severity)">
+                {{ getSeverityText(currentRow.alarm_severity) }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="告警名称">{{ currentRow.alarm_name }}</el-descriptions-item>
+            <el-descriptions-item label="告警类型">{{ getAlarmTypeName() }}</el-descriptions-item>
+            <el-descriptions-item label="告警子类型">{{ getAlarmSubtypeName(currentRow.alarm_subtype) }}</el-descriptions-item>
+            <el-descriptions-item label="数据来源">{{ getSourceText(currentRow.source) }}</el-descriptions-item>
+            <el-descriptions-item label="告警描述" :span="2">{{ currentRow.alarm_description }}</el-descriptions-item>
+            
+            <el-descriptions-item label="控制规则ID">{{ currentRow.control_rule_id }}</el-descriptions-item>
+            <el-descriptions-item label="控制任务ID">{{ currentRow.control_task_id }}</el-descriptions-item>
+            <el-descriptions-item label="会话ID">{{ currentRow.session_id }}</el-descriptions-item>
+            <el-descriptions-item label="终端ID">{{ currentRow.terminal_id }}</el-descriptions-item>
+            <el-descriptions-item label="过程技术ID" :span="2">
+              {{ formatJSON(currentRow.procedure_technique_id) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="源文件路径" :span="2">{{ currentRow.source_file_path }}</el-descriptions-item>
+            
+            <el-descriptions-item label="源IP">{{ currentRow.src_ip }}</el-descriptions-item>
+            <el-descriptions-item label="源端口">{{ currentRow.src_port }}</el-descriptions-item>
+            <el-descriptions-item label="目标IP">{{ currentRow.dst_ip }}</el-descriptions-item>
+            <el-descriptions-item label="目标端口">{{ currentRow.dst_port }}</el-descriptions-item>
+            <el-descriptions-item label="协议">{{ currentRow.protocol }}</el-descriptions-item>
+            <el-descriptions-item label="IP版本">{{ currentRow.ip_version }}</el-descriptions-item>
+            
+            <el-descriptions-item label="攻击阶段">{{ currentRow.attack_stage }}</el-descriptions-item>
+            <el-descriptions-item label="签名ID">{{ currentRow.signature_id }}</el-descriptions-item>
+            <el-descriptions-item label="攻击者IP">{{ currentRow.attack_ip }}</el-descriptions-item>
+            <el-descriptions-item label="被攻击IP">{{ currentRow.attacked_ip }}</el-descriptions-item>
+            <el-descriptions-item label="APT组织">{{ currentRow.apt_group }}</el-descriptions-item>
+            <el-descriptions-item label="漏洞类型">{{ currentRow.vul_type }}</el-descriptions-item>
+            <el-descriptions-item label="CVE ID">{{ currentRow.cve_id }}</el-descriptions-item>
+            <el-descriptions-item label="漏洞描述" :span="2">{{ currentRow.vul_desc }}</el-descriptions-item>
+            <el-descriptions-item label="攻击载荷" :span="2">
+              <el-input type="textarea" :rows="3" v-model="currentRow.attack_payload" readonly />
+            </el-descriptions-item>
+            <el-descriptions-item label="额外数据(data)" :span="2">
+              <el-input type="textarea" :rows="3" :value="formatJSON(currentRow.data)" readonly />
+            </el-descriptions-item>
+            <el-descriptions-item label="创建时间">{{ currentRow.created_at }}</el-descriptions-item>
+          </el-descriptions>
+        </el-tab-pane>
+
+        <!-- 原始告警标签页 -->
+        <el-tab-pane label="原始告警" name="raw">
+          <div v-loading="rawAlertsLoading">
+            <el-alert
+              v-if="rawAlerts.length === 0 && !rawAlertsLoading"
+              title="暂无原始告警数据"
+              type="info"
+              :closable="false"
+              style="margin-bottom: 20px"
+            />
+            <el-collapse v-model="activeRawAlert" accordion v-if="rawAlerts.length > 0">
+              <el-collapse-item 
+                v-for="(rawAlert, index) in rawAlerts" 
+                :key="rawAlert.id" 
+                :name="index"
+                :title="`原始告警 ${index + 1} - ${rawAlert.alarm_name || '未命名'}`"
+              >
+                <el-descriptions :column="2" border size="small">
+                  <el-descriptions-item label="告警ID">{{ rawAlert.alarm_id }}</el-descriptions-item>
+                  <el-descriptions-item label="告警时间">{{ formatTimestamp(rawAlert.alarm_date) }}</el-descriptions-item>
+                  <el-descriptions-item label="威胁等级">
+                    <el-tag :type="getSeverityType(rawAlert.alarm_severity)" size="small">
+                      {{ getSeverityText(rawAlert.alarm_severity) }}
+                    </el-tag>
+                  </el-descriptions-item>
+                  <el-descriptions-item label="告警名称">{{ rawAlert.alarm_name }}</el-descriptions-item>
+                  <el-descriptions-item label="攻击阶段">{{ rawAlert.attack_stage }}</el-descriptions-item>
+                  <el-descriptions-item label="漏洞类型">{{ rawAlert.vul_type }}</el-descriptions-item>
+                  <el-descriptions-item label="CVE编号">{{ rawAlert.cve_id }}</el-descriptions-item>
+                  <el-descriptions-item label="签名ID">{{ rawAlert.signature_id }}</el-descriptions-item>
+                  <el-descriptions-item label="源IP">{{ rawAlert.src_ip }}</el-descriptions-item>
+                  <el-descriptions-item label="源端口">{{ rawAlert.src_port }}</el-descriptions-item>
+                  <el-descriptions-item label="目标IP">{{ rawAlert.dst_ip }}</el-descriptions-item>
+                  <el-descriptions-item label="目标端口">{{ rawAlert.dst_port }}</el-descriptions-item>
+                  <el-descriptions-item label="协议">{{ rawAlert.protocol }}</el-descriptions-item>
+                  <el-descriptions-item label="创建时间">{{ rawAlert.created_at }}</el-descriptions-item>
+                  <el-descriptions-item label="告警描述" :span="2">{{ rawAlert.alarm_description }}</el-descriptions-item>
+                </el-descriptions>
+              </el-collapse-item>
+            </el-collapse>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
     </el-dialog>
   </div>
 </template>
@@ -139,7 +187,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
-import { getNetworkAttacks, getAlarmTypes } from '../api'
+import { getNetworkAttacks, getAlarmTypes, getRawNetworkAttacksByConvergedId } from '../api'
 import { ElMessage } from 'element-plus'
 
 const tableData = ref([])
@@ -151,6 +199,10 @@ const total = ref(0)
 const dialogVisible = ref(false)
 const currentRow = ref(null)
 const alarmTypes = ref(null)
+const activeTab = ref('detail')
+const rawAlerts = ref([])
+const rawAlertsLoading = ref(false)
+const activeRawAlert = ref(0)
 const searchForm = ref({
   src_ip: '',
   src_port: '',
@@ -228,9 +280,31 @@ const handleCurrentChange = () => {
   loadData()
 }
 
-const showDetails = (row) => {
+const showDetails = async (row) => {
   currentRow.value = row
   dialogVisible.value = true
+  activeTab.value = 'detail'
+  rawAlerts.value = []
+  
+  // 加载原始告警数据
+  loadRawAlerts(row.id)
+}
+
+const loadRawAlerts = async (convergedAlertId) => {
+  rawAlertsLoading.value = true
+  try {
+    const response = await getRawNetworkAttacksByConvergedId(convergedAlertId)
+    rawAlerts.value = response.data || []
+  } catch (error) {
+    console.error('加载原始告警失败:', error)
+    rawAlerts.value = []
+    // 只在真正出错时提示，空数组不提示
+    if (error.response && error.response.status !== 200) {
+      ElMessage.error('加载原始告警失败')
+    }
+  } finally {
+    rawAlertsLoading.value = false
+  }
 }
 
 const getSeverityType = (severity) => {

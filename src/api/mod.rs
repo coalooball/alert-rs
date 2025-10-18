@@ -2,6 +2,7 @@ pub mod tag_management;
 pub mod alert_data;
 pub mod alert_fields;
 pub mod dsl_compile;
+pub mod rules;
 
 use serde::Serialize;
 

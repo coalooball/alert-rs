@@ -7,15 +7,15 @@
         </div>
       </template>
       <div class="content-wrapper">
-        <el-tabs v-model="activeTab" tab-position="left" class="config-tabs">
+        <el-tabs v-model="activeTab" class="config-tabs">
           <el-tab-pane label="过滤规则" name="filter">
             <FilterRule />
           </el-tab-pane>
-          <el-tab-pane label="收敛规则" name="convergence">
-            <ConvergenceRule />
+          <el-tab-pane label="收敛规则" name="merged">
+            <MergedRule />
           </el-tab-pane>
-          <el-tab-pane label="关联规则" name="correlation">
-            <CorrelationRule />
+          <el-tab-pane label="关联模型" name="association">
+            <AssociationModel />
           </el-tab-pane>
           <el-tab-pane label="标签规则" name="tag-rule">
             <TagRule />
@@ -32,8 +32,8 @@
 <script setup>
 import { ref } from 'vue'
 import FilterRule from './autoconfig/FilterRule.vue'
-import ConvergenceRule from './autoconfig/ConvergenceRule.vue'
-import CorrelationRule from './autoconfig/CorrelationRule.vue'
+import MergedRule from './autoconfig/MergedRule.vue'
+import AssociationModel from './autoconfig/AssociationModel.vue'
 import TagRule from './autoconfig/TagRule.vue'
 import TagManagement from './autoconfig/TagManagement.vue'
 
@@ -72,14 +72,8 @@ const activeTab = ref('filter')
   overflow-y: auto;
 }
 
-.config-tabs :deep(.el-tabs__nav-wrap) {
-  width: 150px;
-}
-
 .config-tabs :deep(.el-tabs__item) {
   padding: 0 20px;
-  height: 50px;
-  line-height: 50px;
   font-size: 14px;
 }
 

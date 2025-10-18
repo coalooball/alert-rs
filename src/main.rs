@@ -32,6 +32,18 @@ struct Args {
     /// 插入威胁事件模拟数据后退出
     #[arg(long, default_value_t = false)]
     insert_mock_event_data: bool,
+    
+    /// 插入标签模拟数据后退出
+    #[arg(long, default_value_t = false)]
+    insert_mock_tags: bool,
+    
+    /// 插入规则模拟数据后退出（包括收敛规则、关联规则、过滤规则、标签规则）
+    #[arg(long, default_value_t = false)]
+    insert_mock_rules: bool,
+    
+    /// 插入告警模拟数据（原始告警+收敛告警+映射关系）后退出
+    #[arg(long, default_value_t = false)]
+    insert_mock_alerts: bool,
 }
 
 // 应用状态
@@ -81,6 +93,59 @@ async fn main() {
         return;
     }
 
+    // 若指定 --insert-mock-tags，则插入标签模拟数据后退出
+    if args.insert_mock_tags {
+        println!("🔄 正在插入标签模拟数据...");
+        match db::mock_tags::insert_mock_tags(&pool).await {
+            Ok(count) => {
+                println!("✅ 成功插入 {} 条标签模拟数据。", count);
+            }
+            Err(e) => {
+                eprintln!("❌ 插入标签模拟数据失败: {}", e);
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
+    // 若指定 --insert-mock-rules，则插入规则模拟数据后退出
+    if args.insert_mock_rules {
+        println!("🔄 正在插入规则模拟数据...");
+        match db::mock_rules::insert_all_mock_rules(&pool).await {
+            Ok((convergence_count, correlation_count, filter_count, tag_count)) => {
+                println!("✅ 成功插入规则模拟数据：");
+                println!("   - 收敛规则: {} 条", convergence_count);
+                println!("   - 关联规则: {} 条", correlation_count);
+                println!("   - 过滤规则: {} 条", filter_count);
+                println!("   - 标签规则: {} 条", tag_count);
+                println!("   - 总计: {} 条", convergence_count + correlation_count + filter_count + tag_count);
+            }
+            Err(e) => {
+                eprintln!("❌ 插入规则模拟数据失败: {}", e);
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
+    // 若指定 --insert-mock-alerts，则插入告警模拟数据后退出
+    if args.insert_mock_alerts {
+        println!("🔄 正在插入告警模拟数据（原始告警+收敛告警+映射关系）...");
+        match db::mock_converged_alerts::insert_mock_converged_alerts(&pool).await {
+            Ok(count) => {
+                println!("✅ 成功插入告警数据，共 {} 条记录。", count);
+                println!("   - 原始告警表 (raw_alerts)");
+                println!("   - 收敛告警表 (converged_alerts)");
+                println!("   - 映射关系表 (alert_mapping)");
+            }
+            Err(e) => {
+                eprintln!("❌ 插入模拟数据失败: {}", e);
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+
     // 启动 Kafka 消费任务
     let kafka_cfg = config.kafka.clone();
     let topics_cfg = config.topics.clone();
@@ -112,6 +177,10 @@ async fn main() {
         .route("/api/invalid-alerts", get(api::alert_data::get_invalid_alerts))
         .route("/api/threat-events", get(api::alert_data::get_threat_events))
         .route("/api/threat-events/:id", put(api::alert_data::update_threat_event))
+        // 原始告警查询路由
+        .route("/api/network-attacks/:id/raw", get(api::alert_data::get_raw_network_attacks_by_converged_id))
+        .route("/api/malicious-samples/:id/raw", get(api::alert_data::get_raw_malicious_samples_by_converged_id))
+        .route("/api/host-behaviors/:id/raw", get(api::alert_data::get_raw_host_behaviors_by_converged_id))
         // 标签管理路由
         .route("/api/tags", get(api::tag_management::get_tags))
         .route("/api/tags/all", get(api::tag_management::get_all_tags))
@@ -125,6 +194,30 @@ async fn main() {
         // DSL 编译路由
         .route("/api/rules/convergence/compile", post(api::dsl_compile::compile_converge_rule))
         .route("/api/rules/correlation/compile", post(api::dsl_compile::compile_correlate_rule))
+        // 收敛规则路由
+        .route("/api/rules/convergence", get(api::rules::get_convergence_rules))
+        .route("/api/rules/convergence", post(api::rules::create_convergence_rule))
+        .route("/api/rules/convergence/:id", get(api::rules::get_convergence_rule_by_id))
+        .route("/api/rules/convergence/:id", put(api::rules::update_convergence_rule))
+        .route("/api/rules/convergence/:id", delete(api::rules::delete_convergence_rule))
+        // 关联规则路由
+        .route("/api/rules/correlation", get(api::rules::get_correlation_rules))
+        .route("/api/rules/correlation", post(api::rules::create_correlation_rule))
+        .route("/api/rules/correlation/:id", get(api::rules::get_correlation_rule_by_id))
+        .route("/api/rules/correlation/:id", put(api::rules::update_correlation_rule))
+        .route("/api/rules/correlation/:id", delete(api::rules::delete_correlation_rule))
+        // 过滤规则路由
+        .route("/api/rules/filter", get(api::rules::get_filter_rules))
+        .route("/api/rules/filter", post(api::rules::create_filter_rule))
+        .route("/api/rules/filter/:id", get(api::rules::get_filter_rule_by_id))
+        .route("/api/rules/filter/:id", put(api::rules::update_filter_rule))
+        .route("/api/rules/filter/:id", delete(api::rules::delete_filter_rule))
+        // 标签规则路由
+        .route("/api/rules/tag", get(api::rules::get_tag_rules))
+        .route("/api/rules/tag", post(api::rules::create_tag_rule))
+        .route("/api/rules/tag/:id", get(api::rules::get_tag_rule_by_id))
+        .route("/api/rules/tag/:id", put(api::rules::update_tag_rule))
+        .route("/api/rules/tag/:id", delete(api::rules::delete_tag_rule))
         // 其他路由
         .route("/api/alarm-types", get(get_alarm_types))
         .with_state(app_state);

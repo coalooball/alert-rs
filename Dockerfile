@@ -81,6 +81,7 @@ COPY --from=backend-builder --chown=alertapp:alertapp /app/target/release/server
 COPY --from=backend-builder --chown=alertapp:alertapp /app/target/release/generator ./
 COPY --from=frontend-builder --chown=alertapp:alertapp /app/frontend/dist ./frontend/dist
 COPY --chown=alertapp:alertapp config.toml ./
+COPY --chown=alertapp:alertapp alert_fields.toml ./
 COPY --chown=alertapp:alertapp schema/ ./schema/
 
 # 切换到非 root 用户

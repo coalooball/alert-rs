@@ -231,24 +231,21 @@ const dslExample = `CORRELATE
     NAME "检测到攻击链活动"
     DESCRIPTION "网络攻击后发现可疑主机行为"`
 
-const loadRules = () => {
-  // TODO: 调用 API 加载关联规则
-  // 示例数据
-  rules.value = [
-    { 
-      id: 1, 
-      name: '攻击链关联检测', 
-      dsl_rule: 'CORRELATE EVENT attack WHERE alarm_type == 1 EVENT behavior WHERE alarm_type == 2 JOIN ON attack.dst_ip == behavior.terminal_ip WINDOW 10m GENERATE SEVERITY 3 NAME "攻击链活动"',
-      enabled: true 
-    },
-    { 
-      id: 2, 
-      name: '横向移动检测', 
-      dsl_rule: 'CORRELATE EVENT login WHERE alarm_subtype == 2001 EVENT lateral WHERE alarm_subtype == 1005 JOIN ON login.user_account == lateral.user_account WINDOW 30m GENERATE SEVERITY 4 NAME "横向移动"',
-      enabled: true 
+const loadRules = async () => {
+  try {
+    const response = await fetch(`/api/rules/correlation?page=${currentPage.value}&page_size=${pageSize.value}`)
+    const result = await response.json()
+    
+    if (result.success && result.data) {
+      rules.value = result.data.items
+      total.value = result.data.total
+    } else {
+      ElMessage.error(result.error || '加载关联规则失败')
     }
-  ]
-  total.value = rules.value.length
+  } catch (error) {
+    console.error('加载关联规则失败:', error)
+    ElMessage.error('加载关联规则失败')
+  }
 }
 
 const handleAdd = () => {
@@ -273,14 +270,27 @@ const handleDelete = (row) => {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
-  }).then(() => {
-    // TODO: 调用 API 删除规则
-    ElMessage.success('删除成功')
-    loadRules()
-  })
+  }).then(async () => {
+    try {
+      const response = await fetch(`/api/rules/correlation/${row.id}`, {
+        method: 'DELETE'
+      })
+      const result = await response.json()
+      
+      if (result.success) {
+        ElMessage.success('删除成功')
+        loadRules()
+      } else {
+        ElMessage.error(result.error || '删除失败')
+      }
+    } catch (error) {
+      console.error('删除失败:', error)
+      ElMessage.error('删除失败')
+    }
+  }).catch(() => {})
 }
 
-const handleSave = () => {
+const handleSave = async () => {
   if (!formData.value.name) {
     ElMessage.warning('请输入规则名称')
     return
@@ -289,10 +299,38 @@ const handleSave = () => {
     ElMessage.warning('请输入DSL规则')
     return
   }
-  // TODO: 调用 API 保存规则
-  ElMessage.success('保存成功')
-  dialogVisible.value = false
-  loadRules()
+  
+  try {
+    const isEdit = !!formData.value.id
+    const url = isEdit ? `/api/rules/correlation/${formData.value.id}` : '/api/rules/correlation'
+    const method = isEdit ? 'PUT' : 'POST'
+    
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: formData.value.name,
+        dsl_rule: formData.value.dsl_rule,
+        description: formData.value.description || null,
+        enabled: formData.value.enabled
+      })
+    })
+    
+    const result = await response.json()
+    
+    if (result.success) {
+      ElMessage.success('保存成功')
+      dialogVisible.value = false
+      loadRules()
+    } else {
+      ElMessage.error(result.error || '保存失败')
+    }
+  } catch (error) {
+    console.error('保存失败:', error)
+    ElMessage.error('保存失败')
+  }
 }
 
 const insertExample = () => {

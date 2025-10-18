@@ -28,12 +28,12 @@ fn default_page_size() -> u64 {
     20
 }
 
-/// 获取网络攻击告警
+/// 获取网络攻击告警（收敛后）
 pub async fn get_network_attacks(
     State(state): State<Arc<AppState>>,
     Query(params): Query<PageQuery>,
-) -> Json<PageResponse<db::NetworkAttackRecord>> {
-    match db::query_network_attacks(&state.pool, params.page, params.page_size).await {
+) -> Json<PageResponse<db::ConvergedNetworkAttackRecord>> {
+    match db::query_converged_network_attacks(&state.pool, params.page, params.page_size).await {
         Ok((data, total)) => Json(PageResponse {
             data,
             total,
@@ -41,7 +41,7 @@ pub async fn get_network_attacks(
             page_size: params.page_size,
         }),
         Err(e) => {
-            tracing::error!("Query network attacks failed: {}", e);
+            tracing::error!("Query converged network attacks failed: {}", e);
             Json(PageResponse {
                 data: vec![],
                 total: 0,
@@ -52,12 +52,12 @@ pub async fn get_network_attacks(
     }
 }
 
-/// 获取恶意样本告警
+/// 获取恶意样本告警（收敛后）
 pub async fn get_malicious_samples(
     State(state): State<Arc<AppState>>,
     Query(params): Query<PageQuery>,
-) -> Json<PageResponse<db::MaliciousSampleRecord>> {
-    match db::query_malicious_samples(&state.pool, params.page, params.page_size).await {
+) -> Json<PageResponse<db::ConvergedMaliciousSampleRecord>> {
+    match db::query_converged_malicious_samples(&state.pool, params.page, params.page_size).await {
         Ok((data, total)) => Json(PageResponse {
             data,
             total,
@@ -65,7 +65,7 @@ pub async fn get_malicious_samples(
             page_size: params.page_size,
         }),
         Err(e) => {
-            tracing::error!("Query malicious samples failed: {}", e);
+            tracing::error!("Query converged malicious samples failed: {}", e);
             Json(PageResponse {
                 data: vec![],
                 total: 0,
@@ -76,12 +76,12 @@ pub async fn get_malicious_samples(
     }
 }
 
-/// 获取主机行为告警
+/// 获取主机行为告警（收敛后）
 pub async fn get_host_behaviors(
     State(state): State<Arc<AppState>>,
     Query(params): Query<PageQuery>,
-) -> Json<PageResponse<db::HostBehaviorRecord>> {
-    match db::query_host_behaviors(&state.pool, params.page, params.page_size).await {
+) -> Json<PageResponse<db::ConvergedHostBehaviorRecord>> {
+    match db::query_converged_host_behaviors(&state.pool, params.page, params.page_size).await {
         Ok((data, total)) => Json(PageResponse {
             data,
             total,
@@ -89,7 +89,7 @@ pub async fn get_host_behaviors(
             page_size: params.page_size,
         }),
         Err(e) => {
-            tracing::error!("Query host behaviors failed: {}", e);
+            tracing::error!("Query converged host behaviors failed: {}", e);
             Json(PageResponse {
                 data: vec![],
                 total: 0,
@@ -172,6 +172,48 @@ pub async fn update_threat_event(
                     "message": format!("更新失败: {}", e)
                 })),
             )
+        }
+    }
+}
+
+/// 根据收敛告警ID查询网络攻击原始告警列表
+pub async fn get_raw_network_attacks_by_converged_id(
+    State(state): State<Arc<AppState>>,
+    Path(converged_id): Path<Uuid>,
+) -> Json<Vec<db::NetworkAttackRecord>> {
+    match db::query_raw_network_attacks_by_converged_id(&state.pool, converged_id).await {
+        Ok(alerts) => Json(alerts),
+        Err(e) => {
+            tracing::error!("Query raw network attacks by converged id failed: {}", e);
+            Json(vec![])
+        }
+    }
+}
+
+/// 根据收敛告警ID查询恶意样本原始告警列表
+pub async fn get_raw_malicious_samples_by_converged_id(
+    State(state): State<Arc<AppState>>,
+    Path(converged_id): Path<Uuid>,
+) -> Json<Vec<db::MaliciousSampleRecord>> {
+    match db::query_raw_malicious_samples_by_converged_id(&state.pool, converged_id).await {
+        Ok(alerts) => Json(alerts),
+        Err(e) => {
+            tracing::error!("Query raw malicious samples by converged id failed: {}", e);
+            Json(vec![])
+        }
+    }
+}
+
+/// 根据收敛告警ID查询主机行为原始告警列表
+pub async fn get_raw_host_behaviors_by_converged_id(
+    State(state): State<Arc<AppState>>,
+    Path(converged_id): Path<Uuid>,
+) -> Json<Vec<db::HostBehaviorRecord>> {
+    match db::query_raw_host_behaviors_by_converged_id(&state.pool, converged_id).await {
+        Ok(alerts) => Json(alerts),
+        Err(e) => {
+            tracing::error!("Query raw host behaviors by converged id failed: {}", e);
+            Json(vec![])
         }
     }
 }
