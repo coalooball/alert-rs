@@ -11,6 +11,7 @@ pub mod convergence_rules;
 pub mod correlation_rules;
 pub mod filter_rules;
 pub mod tag_rules;
+pub mod auto_push;
 
 use anyhow::Result;
 use sqlx::{PgPool, postgres::PgPoolOptions};
@@ -94,6 +95,9 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<PgPool> {
     // 告警收敛映射表
     alert_mapping::create_alert_mapping_table(&pool).await?;
 
+    // 自动推送配置与推送日志表
+    auto_push::create_auto_push_tables(&pool).await?;
+
     // 威胁事件表
     threat_event::create_threat_event_table(&pool).await?;
 
@@ -122,5 +126,6 @@ pub async fn reset_database(pool: &PgPool) -> Result<()> {
     correlation_rules::drop_correlation_rules_table(pool).await?;
     filter_rules::drop_filter_rules_table(pool).await?;
     tag_rules::drop_tag_rules_table(pool).await?;
+    // 注意：自动推送相关表通常不在 reset 中删除，这里保持不删
     Ok(())
 }

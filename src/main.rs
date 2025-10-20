@@ -5,7 +5,7 @@ mod models;
 mod api;
 mod dsl;
 
-use crate::config::{load_config, AlarmTypesConfig};
+use crate::config::{load_config, AlarmTypesConfig, KafkaConfig, TopicsConfig};
 use axum::{
     Router,
     extract::State,
@@ -50,6 +50,8 @@ struct Args {
 pub struct AppState {
     pub pool: PgPool,
     pub alarm_types: AlarmTypesConfig,
+    pub kafka: KafkaConfig,
+    pub topics: TopicsConfig,
 }
 
 #[tokio::main]
@@ -160,6 +162,8 @@ async fn main() {
     let app_state = Arc::new(AppState {
         pool,
         alarm_types: config.alarm_types,
+        kafka: config.kafka.clone(),
+        topics: config.topics.clone(),
     });
 
     // 配置 CORS
@@ -220,7 +224,17 @@ async fn main() {
         .route("/api/rules/tag/:id", delete(api::rules::delete_tag_rule))
         // 其他路由
         .route("/api/alarm-types", get(get_alarm_types))
-        .with_state(app_state);
+        // 自动推送配置路由 (CRUD)
+        .route("/api/auto/push-configs", get(api::auto_publish::list_push_configs))
+        .route("/api/auto/push-configs", post(api::auto_publish::create_push_config))
+        .route("/api/auto/push-configs/:id", get(api::auto_publish::get_push_config_by_id))
+        .route("/api/auto/push-configs/:id", put(api::auto_publish::update_push_config_by_id))
+        .route("/api/auto/push-configs/:id", delete(api::auto_publish::delete_push_config_by_id))
+        // 推送日志查询路由
+        .route("/api/auto/push-logs", get(api::auto_publish::get_push_logs))
+        // 自动推送收敛告警到 Kafka（按时间窗口）
+        .route("/api/auto/publish-converged", post(api::auto_publish::publish_converged_by_window))
+        .with_state(app_state.clone());
 
     // 合并路由（使用自定义 fallback 支持 SPA 路由）
     let app = Router::new()
@@ -257,7 +271,15 @@ async fn main() {
 
     // 启动服务器
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let server = axum::serve(listener, app);
+
+    // 启动后台自动推送循环
+    let app_state_for_auto = app_state.clone();
+    tokio::spawn(async move {
+        api::auto_publish::run_auto_publisher(app_state_for_auto).await;
+    });
+
+    server.await.unwrap();
 }
 
 // 获取告警类型枚举

@@ -3,6 +3,7 @@ pub mod alert_data;
 pub mod alert_fields;
 pub mod dsl_compile;
 pub mod rules;
+pub mod auto_publish;
 
 use serde::Serialize;
 
