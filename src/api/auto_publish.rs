@@ -14,8 +14,7 @@ use crate::db::{
 };
 use crate::db::auto_push::{
     has_been_pushed, insert_push_log, 
-    list_auto_push_configs, get_auto_push_config, create_auto_push_config, 
-    update_auto_push_config, delete_auto_push_config, get_enabled_configs,
+    get_auto_push_config, update_auto_push_config,
     list_push_logs, list_push_logs_by_type,
 };
 // no model structs needed here
@@ -56,52 +55,20 @@ pub async fn publish_converged_by_window(
 
 // ===== 推送配置 CRUD =====
 #[derive(Deserialize)]
-pub struct CreatePushConfigReq { 
+pub struct UpdatePushConfigReq {
     pub name: String,
-    pub enabled: bool, 
-    pub window_minutes: i32, 
-    pub interval_seconds: i32 
+    pub enabled: bool,
+    pub window_minutes: i32,
+    pub interval_seconds: i32,
 }
 
-#[derive(Deserialize)]
-pub struct UpdatePushConfigReq { 
-    pub name: String,
-    pub enabled: bool, 
-    pub window_minutes: i32, 
-    pub interval_seconds: i32 
-}
-
-#[derive(Serialize)]
-pub struct PushConfigResp { 
-    pub id: String,
-    pub name: String,
-    pub enabled: bool, 
-    pub window_minutes: i32, 
-    pub interval_seconds: i32, 
-    pub created_at: i64,
-    pub updated_at: i64 
-}
-
-impl From<crate::db::auto_push::AutoPushConfig> for PushConfigResp {
-    fn from(cfg: crate::db::auto_push::AutoPushConfig) -> Self {
-        Self {
-            id: cfg.id.to_string(),
-            name: cfg.name,
-            enabled: cfg.enabled,
-            window_minutes: cfg.window_minutes,
-            interval_seconds: cfg.interval_seconds,
-            created_at: cfg.created_at.timestamp_millis(),
-            updated_at: cfg.updated_at.timestamp_millis(),
-        }
-    }
-}
-
-// GET /api/auto/push-configs - 获取所有配置
-pub async fn list_push_configs(State(state): State<Arc<AppState>>) -> Response {
-    match list_auto_push_configs(&state.pool).await {
-        Ok(configs) => {
-            let resp: Vec<PushConfigResp> = configs.into_iter().map(|c| c.into()).collect();
-            axum::response::Json(resp).into_response()
+/// 获取推送配置
+pub async fn get_push_config(
+    State(state): State<Arc<AppState>>,
+) -> Response {
+    match get_auto_push_config(&state.pool).await {
+        Ok(config) => {
+            (axum::http::StatusCode::OK, Json(config)).into_response()
         }
         Err(e) => {
             let err = ErrorResponse { success: false, message: e.to_string() };
@@ -110,76 +77,21 @@ pub async fn list_push_configs(State(state): State<Arc<AppState>>) -> Response {
     }
 }
 
-// GET /api/auto/push-configs/:id - 获取单个配置
-pub async fn get_push_config_by_id(
+/// 更新推送配置
+pub async fn update_push_config(
     State(state): State<Arc<AppState>>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    Json(req): Json<UpdatePushConfigReq>,
 ) -> Response {
-    let uuid = match Uuid::parse_str(&id) {
-        Ok(u) => u,
-        Err(_) => {
-            let err = ErrorResponse { success: false, message: "Invalid UUID".to_string() };
-            return (axum::http::StatusCode::BAD_REQUEST, axum::response::Json(err)).into_response();
-        }
-    };
-    
-    match get_auto_push_config(&state.pool, uuid).await {
-        Ok(cfg) => {
-            let resp: PushConfigResp = cfg.into();
-            axum::response::Json(resp).into_response()
-        }
-        Err(e) => {
-            let err = ErrorResponse { success: false, message: e.to_string() };
-            (axum::http::StatusCode::NOT_FOUND, axum::response::Json(err)).into_response()
-        }
-    }
-}
-
-// POST /api/auto/push-configs - 创建配置
-pub async fn create_push_config(
-    State(state): State<Arc<AppState>>, 
-    Json(req): Json<CreatePushConfigReq>
-) -> Response {
-    if req.window_minutes <= 0 || req.interval_seconds <= 0 { 
-        let err = ErrorResponse { success: false, message: "window_minutes/interval_seconds must be > 0".to_string() }; 
-        return (axum::http::StatusCode::BAD_REQUEST, axum::response::Json(err)).into_response();
-    }
-    
-    match create_auto_push_config(&state.pool, req.name, req.enabled, req.window_minutes, req.interval_seconds).await {
-        Ok(id) => {
-            let ok = SuccessResponse { success: true, message: "created".to_string(), data: Some(serde_json::json!({"id": id.to_string()})) };
-            axum::response::Json(ok).into_response()
-        }
-        Err(e) => {
-            let err = ErrorResponse { success: false, message: e.to_string() };
-            (axum::http::StatusCode::INTERNAL_SERVER_ERROR, axum::response::Json(err)).into_response()
-        }
-    }
-}
-
-// PUT /api/auto/push-configs/:id - 更新配置
-pub async fn update_push_config_by_id(
-    State(state): State<Arc<AppState>>,
-    axum::extract::Path(id): axum::extract::Path<String>,
-    Json(req): Json<UpdatePushConfigReq>
-) -> Response {
-    let uuid = match Uuid::parse_str(&id) {
-        Ok(u) => u,
-        Err(_) => {
-            let err = ErrorResponse { success: false, message: "Invalid UUID".to_string() };
-            return (axum::http::StatusCode::BAD_REQUEST, axum::response::Json(err)).into_response();
-        }
-    };
-    
-    if req.window_minutes <= 0 || req.interval_seconds <= 0 { 
-        let err = ErrorResponse { success: false, message: "window_minutes/interval_seconds must be > 0".to_string() }; 
-        return (axum::http::StatusCode::BAD_REQUEST, axum::response::Json(err)).into_response();
-    }
-    
-    match update_auto_push_config(&state.pool, uuid, req.name, req.enabled, req.window_minutes, req.interval_seconds).await {
+    match update_auto_push_config(
+        &state.pool,
+        req.name,
+        req.enabled,
+        req.window_minutes,
+        req.interval_seconds,
+    ).await {
         Ok(_) => {
-            let ok = SuccessResponse::<()> { success: true, message: "updated".to_string(), data: None };
-            axum::response::Json(ok).into_response()
+            let resp = SuccessResponse { success: true, message: "配置已更新".to_string(), data: None::<()> };
+            Json(resp).into_response()
         }
         Err(e) => {
             let err = ErrorResponse { success: false, message: e.to_string() };
@@ -188,30 +100,8 @@ pub async fn update_push_config_by_id(
     }
 }
 
-// DELETE /api/auto/push-configs/:id - 删除配置
-pub async fn delete_push_config_by_id(
-    State(state): State<Arc<AppState>>,
-    axum::extract::Path(id): axum::extract::Path<String>,
-) -> Response {
-    let uuid = match Uuid::parse_str(&id) {
-        Ok(u) => u,
-        Err(_) => {
-            let err = ErrorResponse { success: false, message: "Invalid UUID".to_string() };
-            return (axum::http::StatusCode::BAD_REQUEST, axum::response::Json(err)).into_response();
-        }
-    };
-    
-    match delete_auto_push_config(&state.pool, uuid).await {
-        Ok(_) => {
-            let ok = SuccessResponse::<()> { success: true, message: "deleted".to_string(), data: None };
-            axum::response::Json(ok).into_response()
-        }
-        Err(e) => {
-            let err = ErrorResponse { success: false, message: e.to_string() };
-            (axum::http::StatusCode::INTERNAL_SERVER_ERROR, axum::response::Json(err)).into_response()
-        }
-    }
-}
+
+// (之前的 CRUD APIs 已移除：list_push_configs, create_push_config, get_push_config_by_id, delete_push_config_by_id)
 
 pub(crate) async fn do_publish(state: &AppState, window_minutes: u64) -> Result<usize> {
     let since = Utc::now() - Duration::minutes(window_minutes as i64);
@@ -612,31 +502,35 @@ pub async fn get_push_logs(
 // 后台自动发布循环 - 支持多配置并发执行
 pub async fn run_auto_publisher(state: Arc<AppState>) {
     loop {
-        // 读取所有启用的配置
-        match get_enabled_configs(&state.pool).await {
-            Ok(configs) => {
-                if configs.is_empty() {
-                    tracing::debug!(target = "auto_push", "No enabled push configs found");
-                } else {
-                    // 为每个配置执行推送任务
-                    for cfg in configs {
-                        let window = cfg.window_minutes as u64;
-                        match do_publish(&state, window).await {
-                            Ok(count) => {
-                                tracing::info!(target = "auto_push", "Auto published for config '{}': sent={}", cfg.name, count);
-                            }
-                            Err(e) => {
-                                tracing::error!(target = "auto_push", "Auto publish failed for config '{}': {}", cfg.name, e);
+        // 每次循环都从数据库读取最新配置
+        match get_auto_push_config(&state.pool).await {
+            Ok(config) => {
+                if config.enabled {
+                    let window = config.window_minutes as u64;
+                    match do_publish(&state, window).await {
+                        Ok(count) => {
+                            if count > 0 {
+                                tracing::info!(target = "auto_push", "Auto published for config '{}': sent={}", config.name, count);
+                            } else {
+                                tracing::debug!(target = "auto_push", "Auto publish for config '{}' completed, no new alerts to push.", config.name);
                             }
                         }
+                        Err(e) => {
+                            tracing::error!(target = "auto_push", "Auto publish failed for config '{}': {}", config.name, e);
+                        }
                     }
+                    // 使用配置的间隔时间
+                    let sleep_duration = std::time::Duration::from_secs(config.interval_seconds as u64);
+                    tracing::debug!(target = "auto_push", "Sleeping for {} seconds.", sleep_duration.as_secs());
+                    tokio::time::sleep(sleep_duration).await;
+                } else {
+                    tracing::info!(target = "auto_push", "Auto publishing is disabled. Checking again in 60 seconds.");
+                    tokio::time::sleep(std::time::Duration::from_secs(60)).await;
                 }
-                // 使用最小的 interval_seconds 作为睡眠时间，如果没有配置则默认30秒
-                tokio::time::sleep(std::time::Duration::from_secs(30)).await;
             }
             Err(e) => {
-                tracing::error!(target = "auto_push", "Load push configs failed: {}", e);
-                tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+                tracing::error!(target = "auto_push", "Failed to load push config: {}. Retrying in 60 seconds.", e);
+                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
             }
         }
     }

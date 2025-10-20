@@ -224,15 +224,12 @@ async fn main() {
         .route("/api/rules/tag/:id", delete(api::rules::delete_tag_rule))
         // 其他路由
         .route("/api/alarm-types", get(get_alarm_types))
-        // 自动推送配置路由 (CRUD)
-        .route("/api/auto/push-configs", get(api::auto_publish::list_push_configs))
-        .route("/api/auto/push-configs", post(api::auto_publish::create_push_config))
-        .route("/api/auto/push-configs/:id", get(api::auto_publish::get_push_config_by_id))
-        .route("/api/auto/push-configs/:id", put(api::auto_publish::update_push_config_by_id))
-        .route("/api/auto/push-configs/:id", delete(api::auto_publish::delete_push_config_by_id))
+        // 自动推送配置路由 (单例)
+        .route("/api/auto/push-config", get(api::auto_publish::get_push_config))
+        .route("/api/auto/push-config", put(api::auto_publish::update_push_config))
         // 推送日志查询路由
         .route("/api/auto/push-logs", get(api::auto_publish::get_push_logs))
-        // 自动推送收敛告警到 Kafka（按时间窗口）
+        // 手动触发推送（用于测试）
         .route("/api/auto/publish-converged", post(api::auto_publish::publish_converged_by_window))
         .with_state(app_state.clone());
 
