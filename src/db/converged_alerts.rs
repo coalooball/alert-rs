@@ -737,3 +737,59 @@ pub async fn query_converged_host_behaviors(pool: &PgPool, page: u64, page_size:
     Ok((records, total.0 as u64))
 }
 
+
+// ============================================================================
+// 自动推送专用查询
+// ============================================================================
+
+/// 查询在指定时间之后，且尚未被推送过的网络攻击收敛告警
+pub async fn query_new_converged_network_attacks(
+    pool: &PgPool,
+    since: DateTime<Utc>,
+) -> Result<Vec<ConvergedNetworkAttackRecord>> {
+    let records = sqlx::query_as(
+        "SELECT t1.*
+         FROM converged_network_attack_alerts t1
+         LEFT JOIN converged_push_logs t2 ON t1.id = t2.converged_id
+         WHERE t1.created_at >= $1 AND t2.converged_id IS NULL",
+    )
+    .bind(since)
+    .fetch_all(pool)
+    .await?;
+    Ok(records)
+}
+
+/// 查询在指定时间之后，且尚未被推送过的恶意样本收敛告警
+pub async fn query_new_converged_malicious_samples(
+    pool: &PgPool,
+    since: DateTime<Utc>,
+) -> Result<Vec<ConvergedMaliciousSampleRecord>> {
+    let records = sqlx::query_as(
+        "SELECT t1.*
+         FROM converged_malicious_sample_alerts t1
+         LEFT JOIN converged_push_logs t2 ON t1.id = t2.converged_id
+         WHERE t1.created_at >= $1 AND t2.converged_id IS NULL",
+    )
+    .bind(since)
+    .fetch_all(pool)
+    .await?;
+    Ok(records)
+}
+
+/// 查询在指定时间之后，且尚未被推送过的主机行为收敛告警
+pub async fn query_new_converged_host_behaviors(
+    pool: &PgPool,
+    since: DateTime<Utc>,
+) -> Result<Vec<ConvergedHostBehaviorRecord>> {
+    let records = sqlx::query_as(
+        "SELECT t1.*
+         FROM converged_host_behavior_alerts t1
+         LEFT JOIN converged_push_logs t2 ON t1.id = t2.converged_id
+         WHERE t1.created_at >= $1 AND t2.converged_id IS NULL",
+    )
+    .bind(since)
+    .fetch_all(pool)
+    .await?;
+    Ok(records)
+}
+

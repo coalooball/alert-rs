@@ -18,6 +18,19 @@ pub struct KafkaConfig {
     pub auto_offset_reset: String,
 }
 
+impl KafkaConfig {
+    pub fn producer_config(&self) -> rdkafka::ClientConfig {
+        let mut config = rdkafka::ClientConfig::new();
+        config
+            .set("bootstrap.servers", &self.brokers)
+            .set("client.id", &self.client_id)
+            .set("acks", &self.acks)
+            .set("linger.ms", self.linger_ms.to_string())
+            .set("compression.type", &self.compression);
+        config
+    }
+}
+
 fn default_auto_offset_reset() -> String {
     "earliest".to_string()
 }

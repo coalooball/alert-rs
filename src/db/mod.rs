@@ -41,6 +41,7 @@ pub use raw_alerts::{
 pub use converged_alerts::{
     ConvergedNetworkAttackRecord, ConvergedMaliciousSampleRecord, ConvergedHostBehaviorRecord,
     query_converged_network_attacks, query_converged_malicious_samples, query_converged_host_behaviors,
+    query_new_converged_network_attacks, query_new_converged_malicious_samples, query_new_converged_host_behaviors,
 };
 
 // 收敛插入函数

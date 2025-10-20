@@ -8,9 +8,9 @@ use chrono::{Utc, Duration};
 use uuid::Uuid;
 
 use crate::db::{
-    query_converged_network_attacks,
-    query_converged_malicious_samples,
-    query_converged_host_behaviors,
+    query_new_converged_network_attacks,
+    query_new_converged_malicious_samples,
+    query_new_converged_host_behaviors,
 };
 use crate::db::auto_push::{
     has_been_pushed, insert_push_log, 
@@ -103,92 +103,68 @@ pub async fn update_push_config(
 
 // (之前的 CRUD APIs 已移除：list_push_configs, create_push_config, get_push_config_by_id, delete_push_config_by_id)
 
+// 定义一个统一的告警载体，用于序列化
+#[derive(Serialize)]
+#[serde(untagged)]
+enum UnifiedAlert {
+    NetworkAttack(OutNetworkAttack),
+    MaliciousSample(OutMaliciousSample),
+    HostBehavior(OutHostBehavior),
+}
+
 pub(crate) async fn do_publish(state: &AppState, window_minutes: u64) -> Result<usize> {
     let since = Utc::now() - Duration::minutes(window_minutes as i64);
 
-    // 查询最近窗口内的收敛数据（使用简单分页循环以防数据量大）
-    let mut out_na: Vec<OutNetworkAttack> = Vec::new();
-    let mut out_ms: Vec<OutMaliciousSample> = Vec::new();
-    let mut out_hb: Vec<OutHostBehavior> = Vec::new();
-    let mut na_ids: Vec<Uuid> = Vec::new();
-    let mut ms_ids: Vec<Uuid> = Vec::new();
-    let mut hb_ids: Vec<Uuid> = Vec::new();
-    let mut page = 1u64;
-    let page_size = 500u64;
-    loop {
-        let (na_page, _total) = query_converged_network_attacks(&state.pool, page, page_size).await?;
-        let (ms_page, _total2) = query_converged_malicious_samples(&state.pool, page, page_size).await?;
-        let (hb_page, _total3) = query_converged_host_behaviors(&state.pool, page, page_size).await?;
+    // 1. 使用新函数高效查询所有未推送的告警
+    let na_records = query_new_converged_network_attacks(&state.pool, since).await?;
+    let ms_records = query_new_converged_malicious_samples(&state.pool, since).await?;
+    let hb_records = query_new_converged_host_behaviors(&state.pool, since).await?;
 
-        let cutoff = since;
-        let mut page_empty = true;
+    // 2. 将所有告警合并到一个 Vec 中，并记录其 ID 和类型用于后续日志
+    let mut unified_alerts: Vec<UnifiedAlert> = Vec::new();
+    let mut logs_to_insert: Vec<(i16, Uuid)> = Vec::new();
 
-        for r in na_page.into_iter().filter(|r| r.created_at >= cutoff) {
-            page_empty = false;
-            if !has_been_pushed(&state.pool, 1, r.id).await? {
-                na_ids.push(r.id);
-                out_na.push(to_payload_na(&r));
-            }
+    for r in na_records {
+        logs_to_insert.push((1, r.id));
+        unified_alerts.push(UnifiedAlert::NetworkAttack(to_payload_na(&r)));
+    }
+    for r in ms_records {
+        logs_to_insert.push((2, r.id));
+        unified_alerts.push(UnifiedAlert::MaliciousSample(to_payload_ms(&r)));
+    }
+    for r in hb_records {
+        logs_to_insert.push((3, r.id));
+        unified_alerts.push(UnifiedAlert::HostBehavior(to_payload_hb(&r)));
+    }
+    
+    // 3. 如果有新告警，则合并为单条消息进行推送
+    if unified_alerts.is_empty() {
+        return Ok(0);
+    }
+
+    let producer: FutureProducer = state.kafka.producer_config().create()?;
+    
+    let payload = serde_json::to_string(&unified_alerts)?;
+    let bytes: Vec<u8> = payload.into_bytes();
+    
+    let delivery_status = producer
+        .send(
+            FutureRecord::<(), _>::to(&state.topics.converged_alerts).payload(&bytes),
+            Timeout::After(std::time::Duration::from_secs(3)),
+        )
+        .await;
+
+    // 4. 推送成功后，批量记录日志
+    if delivery_status.is_ok() {
+        for (alert_type, converged_id) in &logs_to_insert {
+            insert_push_log(&state.pool, *alert_type, *converged_id).await?;
         }
-        for r in ms_page.into_iter().filter(|r| r.created_at >= cutoff) {
-            page_empty = false;
-            if !has_been_pushed(&state.pool, 2, r.id).await? {
-                ms_ids.push(r.id);
-                out_ms.push(to_payload_ms(&r));
-            }
-        }
-        for r in hb_page.into_iter().filter(|r| r.created_at >= cutoff) {
-            page_empty = false;
-            if !has_been_pushed(&state.pool, 3, r.id).await? {
-                hb_ids.push(r.id);
-                out_hb.push(to_payload_hb(&r));
-            }
-        }
-
-        if page_empty { break; }
-        page += 1;
+        tracing::info!(target: "auto_push", "Published {} alerts in a single batch.", unified_alerts.len());
+        Ok(unified_alerts.len())
+    } else {
+        tracing::error!(target: "auto_push", "Failed to send unified alert batch to Kafka.");
+        Err(anyhow::anyhow!("Kafka delivery failed"))
     }
-
-    // Kafka 生产者
-    let producer: FutureProducer = rdkafka::ClientConfig::new()
-        .set("bootstrap.servers", &state.kafka.brokers)
-        .set("client.id", &state.kafka.client_id)
-        .create()?;
-
-    // 发送（每种类型发送一个数组报文），并记录日志（去重）
-    let mut sent = 0usize;
-    if !out_na.is_empty() {
-        let payload = serde_json::to_string(&out_na)?;
-        let bytes: Vec<u8> = payload.into_bytes();
-        let _ = producer
-            .send(FutureRecord::<(), _>::to(&state.topics.converged_alerts).payload(bytes.as_slice()), Timeout::After(std::time::Duration::from_secs(3)))
-            .await;
-        for r in na_ids.iter() { insert_push_log(&state.pool, 1, *r).await?; }
-        tracing::info!(target: "auto_push", "Published network_attack converged: count={}", na_ids.len());
-        sent += na_ids.len();
-    }
-    if !out_ms.is_empty() {
-        let payload = serde_json::to_string(&out_ms)?;
-        let bytes: Vec<u8> = payload.into_bytes();
-        let _ = producer
-            .send(FutureRecord::<(), _>::to(&state.topics.converged_alerts).payload(bytes.as_slice()), Timeout::After(std::time::Duration::from_secs(3)))
-            .await;
-        for r in ms_ids.iter() { insert_push_log(&state.pool, 2, *r).await?; }
-        tracing::info!(target: "auto_push", "Published malicious_sample converged: count={}", ms_ids.len());
-        sent += ms_ids.len();
-    }
-    if !out_hb.is_empty() {
-        let payload = serde_json::to_string(&out_hb)?;
-        let bytes: Vec<u8> = payload.into_bytes();
-        let _ = producer
-            .send(FutureRecord::<(), _>::to(&state.topics.converged_alerts).payload(bytes.as_slice()), Timeout::After(std::time::Duration::from_secs(3)))
-            .await;
-        for r in hb_ids.iter() { insert_push_log(&state.pool, 3, *r).await?; }
-        tracing::info!(target: "auto_push", "Published host_behavior converged: count={}", hb_ids.len());
-        sent += hb_ids.len();
-    }
-
-    Ok(sent)
 }
 
 // 输出结构体（符合用户给定格式，字段为小驼峰，并补充 modelType 等）
