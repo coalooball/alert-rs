@@ -7,7 +7,6 @@
     </div>
 
     <el-table :data="rules" stripe style="width: 100%; margin-top: 20px;">
-      <el-table-column prop="id" label="规则ID" width="80" />
       <el-table-column prop="rule_type" label="规则类型" width="100">
         <template #default="scope">
           <el-tag :type="scope.row.rule_type === 'convergence' ? 'primary' : 'success'">
@@ -15,7 +14,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="name" label="规则名称" width="200" />
+      <el-table-column prop="name" label="规则名称" width="250" />
       <el-table-column prop="dsl_rule" label="DSL规则" :show-overflow-tooltip="true">
         <template #default="scope">
           <code class="dsl-preview">{{ scope.row.dsl_rule }}</code>

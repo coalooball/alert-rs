@@ -23,14 +23,9 @@ pub struct PushLogRecord {
 }
 
 pub async fn create_auto_push_tables(pool: &PgPool) -> Result<()> {
-    // 强制删除旧表以应用新的单例配置 schema
-    sqlx::query("DROP TABLE IF EXISTS auto_push_config")
-        .execute(pool)
-        .await?;
-
-    // 创建新表，id 为 SMALLINT 类型的主键
+    // 创建配置表，如果不存在
     sqlx::query(
-        "CREATE TABLE auto_push_config (
+        "CREATE TABLE IF NOT EXISTS auto_push_config (
             id SMALLINT PRIMARY KEY DEFAULT 1,
             name TEXT NOT NULL,
             enabled BOOLEAN NOT NULL DEFAULT FALSE,
@@ -41,10 +36,16 @@ pub async fn create_auto_push_tables(pool: &PgPool) -> Result<()> {
         )"
     ).execute(pool).await?;
 
-    // 插入默认配置
-    sqlx::query(
-        "INSERT INTO auto_push_config (id, name) VALUES (1, '默认配置')"
-    ).execute(pool).await?;
+    // 检查是否已有默认配置
+    let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM auto_push_config WHERE id=1)")
+        .fetch_one(pool)
+        .await?;
+
+    if !exists {
+        sqlx::query(
+            "INSERT INTO auto_push_config (id, name) VALUES (1, '默认配置')"
+        ).execute(pool).await?;
+    }
 
     // 推送日志表
     sqlx::query(

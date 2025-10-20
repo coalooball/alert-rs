@@ -25,6 +25,23 @@
           <el-form-item label="MD5">
             <el-input v-model="searchForm.md5" placeholder="请输入MD5" clearable style="width: 280px" />
           </el-form-item>
+          <el-form-item label="标签">
+            <el-select
+              v-model="searchForm.tags"
+              multiple
+              filterable
+              placeholder="选择或搜索标签"
+              style="width: 200px"
+              clearable
+            >
+              <el-option
+                v-for="tag in allTags"
+                :key="tag.id"
+                :label="tag.name"
+                :value="tag.name"
+              />
+            </el-select>
+          </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button @click="handleReset">重置</el-button>
@@ -289,7 +306,8 @@ const searchForm = ref({
   sample_name: '',
   file_type: '',
   sample_family: '',
-  md5: ''
+  md5: '',
+  tags: []
 })
 const allTags = ref([])
 const alertTags = ref([])
@@ -349,6 +367,15 @@ const applyFilter = () => {
       item.md5 && item.md5.toLowerCase().includes(searchForm.value.md5.toLowerCase())
     )
   }
+  if (searchForm.value.tags && searchForm.value.tags.length > 0) {
+    filtered = filtered.filter(item => 
+      item.tags && item.tags.some(tag => 
+        searchForm.value.tags.some(searchTag => 
+          tag.name.toLowerCase().includes(searchTag.toLowerCase())
+        )
+      )
+    )
+  }
   
   filteredTableData.value = filtered
 }
@@ -362,7 +389,8 @@ const handleReset = () => {
     sample_name: '',
     file_type: '',
     sample_family: '',
-    md5: ''
+    md5: '',
+    tags: []
   }
   applyFilter()
 }
