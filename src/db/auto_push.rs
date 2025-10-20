@@ -78,14 +78,6 @@ pub async fn update_auto_push_config(pool: &PgPool, name: String, enabled: bool,
     Ok(())
 }
 
-
-pub async fn has_been_pushed(pool: &PgPool, alert_type: i16, converged_id: uuid::Uuid) -> Result<bool> {
-    let row: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM converged_push_logs WHERE alert_type=$1 AND converged_id=$2"
-    ).bind(alert_type).bind(converged_id).fetch_one(pool).await?;
-    Ok(row.0 > 0)
-}
-
 pub async fn insert_push_log(pool: &PgPool, alert_type: i16, converged_id: uuid::Uuid) -> Result<()> {
     sqlx::query(
         "INSERT INTO converged_push_logs (alert_type, converged_id) VALUES ($1, $2)"

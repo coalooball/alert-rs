@@ -13,7 +13,7 @@ use crate::db::{
     query_new_converged_host_behaviors,
 };
 use crate::db::auto_push::{
-    has_been_pushed, insert_push_log, 
+    insert_push_log, 
     get_auto_push_config, update_auto_push_config,
     list_push_logs, list_push_logs_by_type,
 };
@@ -168,241 +168,341 @@ pub(crate) async fn do_publish(state: &AppState, window_minutes: u64) -> Result<
 }
 
 // 输出结构体（符合用户给定格式，字段为小驼峰，并补充 modelType 等）
-
 #[derive(Serialize)]
-struct OutNetworkAttack {
-    modelType: &'static str,
-    alarmId: Option<String>,
-    alarmDate: Option<i64>,
-    alarmSeverity: Option<i16>,
-    alarmName: Option<String>,
-    alarmDescription: Option<String>,
-    alarmType: i16,
-    alarmSubType: Option<i32>,
-    controlRuleId: Option<String>,
-    controlTaskId: Option<String>,
-    procedureTechniqueId: Option<serde_json::Value>,
-    sessionId: Option<String>,
-    ipVersion: Option<i16>,
-    srcIp: Option<String>,
-    srcPort: Option<i32>,
-    dstIp: Option<String>,
-    dstPort: Option<i32>,
-    protocol: Option<String>,
-    terminalId: Option<String>,
-    sourceFilePath: Option<String>,
-    createdAt: i64,
-    updatedAt: i64,
-    signatureId: Option<String>,
-    attackPayload: Option<String>,
-    attackStage: Option<String>,
-    attackIp: Option<String>,
-    attackedIp: Option<String>,
-    aptGroup: Option<String>,
-    vulType: Option<String>,
-    cveId: Option<String>,
-    vulDesc: Option<String>,
+#[allow(non_snake_case)]
+pub struct OutNetworkAttack {
+    #[serde(rename = "modelType")]
+    pub model_type: &'static str,
+    #[serde(rename = "alarmId")]
+    pub alarm_id: Option<String>,
+    #[serde(rename = "alarmDate")]
+    pub alarm_date: Option<i64>,
+    #[serde(rename = "alarmSeverity")]
+    pub alarm_severity: Option<i16>,
+    #[serde(rename = "alarmName")]
+    pub alarm_name: Option<String>,
+    #[serde(rename = "alarmDescription")]
+    pub alarm_description: Option<String>,
+    #[serde(rename = "alarmType")]
+    pub alarm_type: i16,
+    #[serde(rename = "alarmSubType")]
+    pub alarm_sub_type: Option<i32>,
+    #[serde(rename = "controlRuleId")]
+    pub control_rule_id: Option<String>,
+    #[serde(rename = "controlTaskId")]
+    pub control_task_id: Option<String>,
+    #[serde(rename = "procedureTechniqueId")]
+    pub procedure_technique_id: Option<serde_json::Value>,
+    #[serde(rename = "sessionId")]
+    pub session_id: Option<String>,
+    #[serde(rename = "ipVersion")]
+    pub ip_version: Option<i16>,
+    #[serde(rename = "srcIp")]
+    pub src_ip: Option<String>,
+    #[serde(rename = "srcPort")]
+    pub src_port: Option<i32>,
+    #[serde(rename = "dstIp")]
+    pub dst_ip: Option<String>,
+    #[serde(rename = "dstPort")]
+    pub dst_port: Option<i32>,
+    pub protocol: Option<String>,
+    #[serde(rename = "terminalId")]
+    pub terminal_id: Option<String>,
+    #[serde(rename = "sourceFilePath")]
+    pub source_file_path: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: i64,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: i64,
+    #[serde(rename = "signatureId")]
+    pub signature_id: Option<String>,
+    #[serde(rename = "attackPayload")]
+    pub attack_payload: Option<String>,
+    #[serde(rename = "attackStage")]
+    pub attack_stage: Option<String>,
+    #[serde(rename = "attackIp")]
+    pub attack_ip: Option<String>,
+    #[serde(rename = "attackedIp")]
+    pub attacked_ip: Option<String>,
+    #[serde(rename = "aptGroup")]
+    pub apt_group: Option<String>,
+    #[serde(rename = "vulType")]
+    pub vul_type: Option<String>,
+    #[serde(rename = "cveId")]
+    pub cve_id: Option<String>,
+    #[serde(rename = "vulDesc")]
+    pub vul_desc: Option<String>,
 }
 
 fn to_payload_na(r: &crate::db::ConvergedNetworkAttackRecord) -> OutNetworkAttack {
     OutNetworkAttack {
-        modelType: "ALM_CLU_ACT",
-        alarmId: r.alarm_id.clone(),
-        alarmDate: r.alarm_date,
-        alarmSeverity: r.alarm_severity,
-        alarmName: r.alarm_name.clone(),
-        alarmDescription: r.alarm_description.clone(),
-        alarmType: 1,
-        alarmSubType: Some(r.alarm_subtype),
-        controlRuleId: r.control_rule_id.clone(),
-        controlTaskId: r.control_task_id.clone(),
-        procedureTechniqueId: r.procedure_technique_id.clone(),
-        sessionId: r.session_id.clone(),
-        ipVersion: r.ip_version,
-        srcIp: r.src_ip.clone(),
-        srcPort: r.src_port,
-        dstIp: r.dst_ip.clone(),
-        dstPort: r.dst_port,
+        model_type: "ALM_STR_NA",
+        alarm_id: r.alarm_id.clone(),
+        alarm_date: r.alarm_date,
+        alarm_severity: r.alarm_severity,
+        alarm_name: r.alarm_name.clone(),
+        alarm_description: r.alarm_description.clone(),
+        alarm_type: 1,
+        alarm_sub_type: Some(r.alarm_subtype),
+        control_rule_id: r.control_rule_id.clone(),
+        control_task_id: r.control_task_id.clone(),
+        procedure_technique_id: r.procedure_technique_id.clone(),
+        session_id: r.session_id.clone(),
+        ip_version: r.ip_version,
+        src_ip: r.src_ip.clone(),
+        src_port: r.src_port,
+        dst_ip: r.dst_ip.clone(),
+        dst_port: r.dst_port,
         protocol: r.protocol.clone(),
-        terminalId: r.terminal_id.clone(),
-        sourceFilePath: r.source_file_path.clone(),
-        createdAt: r.created_at.timestamp_millis(),
-        updatedAt: Utc::now().timestamp_millis(),
-        signatureId: r.signature_id.clone(),
-        attackPayload: r.attack_payload.clone(),
-        attackStage: r.attack_stage.clone(),
-        attackIp: r.attack_ip.clone(),
-        attackedIp: r.attacked_ip.clone(),
-        aptGroup: r.apt_group.clone(),
-        vulType: r.vul_type.clone(),
-        cveId: r.cve_id.clone(),
-        vulDesc: r.vul_desc.clone(),
+        terminal_id: r.terminal_id.clone(),
+        source_file_path: r.source_file_path.clone(),
+        created_at: r.created_at.timestamp_millis(),
+        updated_at: Utc::now().timestamp_millis(),
+        signature_id: r.signature_id.clone(),
+        attack_payload: r.attack_payload.clone(),
+        attack_stage: r.attack_stage.clone(),
+        attack_ip: r.attack_ip.clone(),
+        attacked_ip: r.attacked_ip.clone(),
+        apt_group: r.apt_group.clone(),
+        vul_type: r.vul_type.clone(),
+        cve_id: r.cve_id.clone(),
+        vul_desc: r.vul_desc.clone(),
     }
 }
 
 #[derive(Serialize)]
-struct OutMaliciousSample {
-    modelType: &'static str,
-    alarmDate: Option<i64>,
-    alarmDescription: Option<String>,
-    alarmId: Option<String>,
-    alarmName: Option<String>,
-    alarmSeverity: Option<i16>,
-    alarmType: i16,
-    alarmSubType: Option<i32>,
-    controlRuleId: Option<String>,
-    controlTaskId: Option<String>,
-    procedureTechniqueId: Option<serde_json::Value>,
-    sessionId: Option<String>,
-    createdAt: i64,
-    dstIp: Option<String>,
-    dstPort: Option<i32>,
-    fileSize: Option<i64>,
-    fileType: Option<String>,
-    ipVersion: Option<i16>,
-    md5: Option<String>,
-    sampleFamily: Option<String>,
-    sampleOriginalName: Option<String>,
-    sampleSource: Option<i16>,
-    sha1: Option<String>,
-    sha256: Option<String>,
-    srcIp: Option<String>,
-    srcPort: Option<i32>,
-    sha512: Option<String>,
-    ssdeep: Option<String>,
-    aptGroup: Option<String>,
-    sampleDescription: Option<String>,
-    sampleAlarmEngine: Option<serde_json::Value>,
-    targetPlatform: Option<String>,
-    language: Option<String>,
-    rule: Option<String>,
-    targetContent: Option<String>,
-    compileDate: Option<i64>,
-    lastAnalyDate: Option<i64>,
-    sampleAlarmDetail: Option<String>,
-    updatedAt: i64,
+#[allow(non_snake_case)]
+pub struct OutMaliciousSample {
+    #[serde(rename = "modelType")]
+    pub model_type: &'static str,
+    #[serde(rename = "alarmDate")]
+    pub alarm_date: Option<i64>,
+    #[serde(rename = "alarmDescription")]
+    pub alarm_description: Option<String>,
+    #[serde(rename = "alarmId")]
+    pub alarm_id: Option<String>,
+    #[serde(rename = "alarmName")]
+    pub alarm_name: Option<String>,
+    #[serde(rename = "alarmSeverity")]
+    pub alarm_severity: Option<i16>,
+    #[serde(rename = "alarmType")]
+    pub alarm_type: i16,
+    #[serde(rename = "alarmSubType")]
+    pub alarm_sub_type: Option<i32>,
+    #[serde(rename = "controlRuleId")]
+    pub control_rule_id: Option<String>,
+    #[serde(rename = "controlTaskId")]
+    pub control_task_id: Option<String>,
+    #[serde(rename = "procedureTechniqueId")]
+    pub procedure_technique_id: Option<serde_json::Value>,
+    #[serde(rename = "sessionId")]
+    pub session_id: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: i64,
+    #[serde(rename = "dstIp")]
+    pub dst_ip: Option<String>,
+    #[serde(rename = "dstPort")]
+    pub dst_port: Option<i32>,
+    #[serde(rename = "fileSize")]
+    pub file_size: Option<i64>,
+    #[serde(rename = "fileType")]
+    pub file_type: Option<String>,
+    #[serde(rename = "ipVersion")]
+    pub ip_version: Option<i16>,
+    pub md5: Option<String>,
+    #[serde(rename = "sampleFamily")]
+    pub sample_family: Option<String>,
+    #[serde(rename = "sampleOriginalName")]
+    pub sample_original_name: Option<String>,
+    #[serde(rename = "sampleSource")]
+    pub sample_source: Option<i16>,
+    pub sha1: Option<String>,
+    pub sha256: Option<String>,
+    #[serde(rename = "srcIp")]
+    pub src_ip: Option<String>,
+    #[serde(rename = "srcPort")]
+    pub src_port: Option<i32>,
+    pub ssdeep: Option<String>,
+    #[serde(rename = "terminalId")]
+    pub terminal_id: Option<String>,
+    #[serde(rename = "aptGroup")]
+    pub apt_group: Option<String>,
+    #[serde(rename = "sampleDescription")]
+    pub sample_description: Option<String>,
+    #[serde(rename = "sampleAlarmEngine")]
+    pub sample_alarm_engine: Option<serde_json::Value>,
+    #[serde(rename = "targetPlatform")]
+    pub target_platform: Option<String>,
+    pub language: Option<String>,
+    pub rule: Option<String>,
+    #[serde(rename = "targetContent")]
+    pub target_content: Option<String>,
+    #[serde(rename = "compileDate")]
+    pub compile_date: Option<i64>,
+    #[serde(rename = "lastAnalyDate")]
+    pub last_analy_date: Option<i64>,
+    #[serde(rename = "sampleAlarmDetail")]
+    pub sample_alarm_detail: Option<String>,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: i64,
 }
 
 fn to_payload_ms(r: &crate::db::ConvergedMaliciousSampleRecord) -> OutMaliciousSample {
     OutMaliciousSample {
-        modelType: "ALM_CLU_ACT",
-        alarmDate: r.alarm_date,
-        alarmDescription: r.alarm_description.clone(),
-        alarmId: r.alarm_id.clone(),
-        alarmName: r.alarm_name.clone(),
-        alarmSeverity: r.alarm_severity,
-        alarmType: 2,
-        alarmSubType: Some(r.alarm_subtype),
-        controlRuleId: r.control_rule_id.clone(),
-        controlTaskId: r.control_task_id.clone(),
-        procedureTechniqueId: r.procedure_technique_id.clone(),
-        sessionId: r.session_id.clone(),
-        createdAt: r.created_at.timestamp_millis(),
-        dstIp: r.dst_ip.clone(),
-        dstPort: r.dst_port,
-        fileSize: r.file_size,
-        fileType: r.file_type.clone(),
-        ipVersion: r.ip_version,
+        model_type: "ALM_STR_MS",
+        alarm_date: r.alarm_date,
+        alarm_description: r.alarm_description.clone(),
+        alarm_id: r.alarm_id.clone(),
+        alarm_name: r.alarm_name.clone(),
+        alarm_severity: r.alarm_severity,
+        alarm_type: 2,
+        alarm_sub_type: Some(r.alarm_subtype),
+        control_rule_id: r.control_rule_id.clone(),
+        control_task_id: r.control_task_id.clone(),
+        procedure_technique_id: r.procedure_technique_id.clone(),
+        session_id: r.session_id.clone(),
+        created_at: r.created_at.timestamp_millis(),
+        dst_ip: r.dst_ip.clone(),
+        dst_port: r.dst_port,
+        file_size: r.file_size,
+        file_type: r.file_type.clone(),
+        ip_version: r.ip_version,
         md5: r.md5.clone(),
-        sampleFamily: r.sample_family.clone(),
-        sampleOriginalName: r.sample_original_name.clone(),
-        sampleSource: r.sample_source,
+        sample_family: r.sample_family.clone(),
+        sample_original_name: r.sample_original_name.clone(),
+        sample_source: r.sample_source,
         sha1: r.sha1.clone(),
         sha256: r.sha256.clone(),
-        srcIp: r.src_ip.clone(),
-        srcPort: r.src_port,
-        sha512: r.sha512.clone(),
+        src_ip: r.src_ip.clone(),
+        src_port: r.src_port,
         ssdeep: r.ssdeep.clone(),
-        aptGroup: r.apt_group.clone(),
-        sampleDescription: r.sample_description.clone(),
-        sampleAlarmEngine: r.sample_alarm_engine.clone(),
-        targetPlatform: r.target_platform.clone(),
+        terminal_id: r.terminal_id.clone(),
+        apt_group: r.apt_group.clone(),
+        sample_description: r.sample_description.clone(),
+        sample_alarm_engine: r.sample_alarm_engine.clone(),
+        target_platform: r.target_platform.clone(),
         language: r.language.clone(),
         rule: r.rule.clone(),
-        targetContent: r.target_content.clone(),
-        compileDate: r.compile_date,
-        lastAnalyDate: r.last_analy_date,
-        sampleAlarmDetail: r.sample_alarm_detail.clone(),
-        updatedAt: Utc::now().timestamp_millis(),
+        target_content: r.target_content.clone(),
+        compile_date: r.compile_date,
+        last_analy_date: r.last_analy_date,
+        sample_alarm_detail: r.sample_alarm_detail.clone(),
+        updated_at: Utc::now().timestamp_millis(),
     }
 }
 
 #[derive(Serialize)]
-struct OutHostBehavior {
-    modelType: &'static str,
-    alarmDate: Option<i64>,
-    alarmDescription: Option<String>,
-    alarmId: Option<String>,
-    alarmName: Option<String>,
-    alarmSeverity: Option<i16>,
-    alarmType: i16,
-    alarmSubType: Option<i32>,
-    controlRuleId: Option<String>,
-    controlTaskId: Option<String>,
-    procedureTechniqueId: Option<serde_json::Value>,
-    sessionId: Option<String>,
-    createdAt: i64,
-    dstIp: Option<String>,
-    dstPort: Option<i32>,
-    dstProcessMd5: Option<String>,
-    fileMd5: Option<String>,
-    fileName: Option<String>,
-    filePath: Option<String>,
-    hostName: Option<String>,
-    ipVersion: Option<i16>,
-    srcIp: Option<String>,
-    srcPort: Option<i32>,
-    terminalIp: Option<String>,
-    terminalOs: Option<String>,
-    dstProcessPath: Option<String>,
-    dstProcessCli: Option<String>,
-    srcProcessMd5: Option<String>,
-    srcProcessPath: Option<String>,
-    srcProcessCli: Option<String>,
-    registerKeyName: Option<String>,
-    registerKeyValue: Option<String>,
-    registerPath: Option<String>,
-    updatedAt: i64,
-    userAccount: Option<String>,
+#[allow(non_snake_case)]
+pub struct OutHostBehavior {
+    #[serde(rename = "modelType")]
+    pub model_type: &'static str,
+    #[serde(rename = "alarmDate")]
+    pub alarm_date: Option<i64>,
+    #[serde(rename = "alarmDescription")]
+    pub alarm_description: Option<String>,
+    #[serde(rename = "alarmId")]
+    pub alarm_id: Option<String>,
+    #[serde(rename = "alarmName")]
+    pub alarm_name: Option<String>,
+    #[serde(rename = "alarmSeverity")]
+    pub alarm_severity: Option<i16>,
+    #[serde(rename = "alarmType")]
+    pub alarm_type: i16,
+    #[serde(rename = "alarmSubType")]
+    pub alarm_sub_type: Option<i32>,
+    #[serde(rename = "controlRuleId")]
+    pub control_rule_id: Option<String>,
+    #[serde(rename = "controlTaskId")]
+    pub control_task_id: Option<String>,
+    #[serde(rename = "procedureTechniqueId")]
+    pub procedure_technique_id: Option<serde_json::Value>,
+    #[serde(rename = "sessionId")]
+    pub session_id: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: i64,
+    #[serde(rename = "dstIp")]
+    pub dst_ip: Option<String>,
+    #[serde(rename = "dstPort")]
+    pub dst_port: Option<i32>,
+    #[serde(rename = "dstProcessMd5")]
+    pub dst_process_md5: Option<String>,
+    #[serde(rename = "fileMd5")]
+    pub file_md5: Option<String>,
+    #[serde(rename = "fileName")]
+    pub file_name: Option<String>,
+    #[serde(rename = "filePath")]
+    pub file_path: Option<String>,
+    #[serde(rename = "hostName")]
+    pub host_name: Option<String>,
+    #[serde(rename = "ipVersion")]
+    pub ip_version: Option<i16>,
+    #[serde(rename = "srcIp")]
+    pub src_ip: Option<String>,
+    #[serde(rename = "srcPort")]
+    pub src_port: Option<i32>,
+    #[serde(rename = "terminalIp")]
+    pub terminal_ip: Option<String>,
+    #[serde(rename = "terminalOs")]
+    pub terminal_os: Option<String>,
+    #[serde(rename = "dstProcessPath")]
+    pub dst_process_path: Option<String>,
+    #[serde(rename = "dstProcessCli")]
+    pub dst_process_cli: Option<String>,
+    #[serde(rename = "srcProcessMd5")]
+    pub src_process_md5: Option<String>,
+    #[serde(rename = "srcProcessPath")]
+    pub src_process_path: Option<String>,
+    #[serde(rename = "srcProcessCli")]
+    pub src_process_cli: Option<String>,
+    #[serde(rename = "registerKeyName")]
+    pub register_key_name: Option<String>,
+    #[serde(rename = "registerKeyValue")]
+    pub register_key_value: Option<String>,
+    #[serde(rename = "registerPath")]
+    pub register_path: Option<String>,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: i64,
+    #[serde(rename = "userAccount")]
+    pub user_account: Option<String>,
 }
 
 fn to_payload_hb(r: &crate::db::ConvergedHostBehaviorRecord) -> OutHostBehavior {
     OutHostBehavior {
-        modelType: "ALM_CLU_ACT",
-        alarmDate: r.alarm_date,
-        alarmDescription: r.alarm_description.clone(),
-        alarmId: r.alarm_id.clone(),
-        alarmName: r.alarm_name.clone(),
-        alarmSeverity: r.alarm_severity,
-        alarmType: 3,
-        alarmSubType: Some(r.alarm_subtype),
-        controlRuleId: r.control_rule_id.clone(),
-        controlTaskId: r.control_task_id.clone(),
-        procedureTechniqueId: r.procedure_technique_id.clone(),
-        sessionId: r.session_id.clone(),
-        createdAt: r.created_at.timestamp_millis(),
-        dstIp: r.dst_ip.clone(),
-        dstPort: r.dst_port,
-        dstProcessMd5: r.dst_process_md5.clone(),
-        fileMd5: r.file_md5.clone(),
-        fileName: r.file_name.clone(),
-        filePath: r.file_path.clone(),
-        hostName: r.host_name.clone(),
-        ipVersion: r.ip_version,
-        srcIp: r.src_ip.clone(),
-        srcPort: r.src_port,
-        terminalIp: r.terminal_ip.clone(),
-        terminalOs: r.terminal_os.clone(),
-        dstProcessPath: r.dst_process_path.clone(),
-        dstProcessCli: r.dst_process_cli.clone(),
-        srcProcessMd5: r.src_process_md5.clone(),
-        srcProcessPath: r.src_process_path.clone(),
-        srcProcessCli: r.src_process_cli.clone(),
-        registerKeyName: r.register_key_name.clone(),
-        registerKeyValue: r.register_key_value.clone(),
-        registerPath: r.register_path.clone(),
-        updatedAt: Utc::now().timestamp_millis(),
-        userAccount: r.user_account.clone(),
+        model_type: "ALM_CLU_ACT",
+        alarm_date: r.alarm_date,
+        alarm_description: r.alarm_description.clone(),
+        alarm_id: r.alarm_id.clone(),
+        alarm_name: r.alarm_name.clone(),
+        alarm_severity: r.alarm_severity,
+        alarm_type: 3,
+        alarm_sub_type: Some(r.alarm_subtype),
+        control_rule_id: r.control_rule_id.clone(),
+        control_task_id: r.control_task_id.clone(),
+        procedure_technique_id: r.procedure_technique_id.clone(),
+        session_id: r.session_id.clone(),
+        created_at: r.created_at.timestamp_millis(),
+        dst_ip: r.dst_ip.clone(),
+        dst_port: r.dst_port,
+        dst_process_md5: r.dst_process_md5.clone(),
+        file_md5: r.file_md5.clone(),
+        file_name: r.file_name.clone(),
+        file_path: r.file_path.clone(),
+        host_name: r.host_name.clone(),
+        ip_version: r.ip_version,
+        src_ip: r.src_ip.clone(),
+        src_port: r.src_port,
+        terminal_ip: r.terminal_ip.clone(),
+        terminal_os: r.terminal_os.clone(),
+        dst_process_path: r.dst_process_path.clone(),
+        dst_process_cli: r.dst_process_cli.clone(),
+        src_process_md5: r.src_process_md5.clone(),
+        src_process_path: r.src_process_path.clone(),
+        src_process_cli: r.src_process_cli.clone(),
+        register_key_name: r.register_key_name.clone(),
+        register_key_value: r.register_key_value.clone(),
+        register_path: r.register_path.clone(),
+        updated_at: Utc::now().timestamp_millis(),
+        user_account: r.user_account.clone(),
     }
 }
 

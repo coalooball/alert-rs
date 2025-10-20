@@ -48,7 +48,7 @@
         </el-table-column>
         <el-table-column prop="alarm_subtype" label="告警子类型" width="150" show-overflow-tooltip>
           <template #default="{ row }">
-            {{ getAlarmSubtypeName(row.alarm_subtype) }}
+            {{ row.alarm_subtype_name || getAlarmSubtypeName(row.alarm_subtype) }}
           </template>
         </el-table-column>
         <el-table-column prop="host_name" label="主机名" width="180" show-overflow-tooltip />
@@ -98,7 +98,7 @@
             </el-descriptions-item>
             <el-descriptions-item label="告警名称">{{ currentRow.alarm_name }}</el-descriptions-item>
             <el-descriptions-item label="告警类型">{{ getAlarmTypeName() }}</el-descriptions-item>
-            <el-descriptions-item label="告警子类型">{{ getAlarmSubtypeName(currentRow.alarm_subtype) }}</el-descriptions-item>
+            <el-descriptions-item label="告警子类型">{{ currentRow.alarm_subtype_name || getAlarmSubtypeName(currentRow.alarm_subtype) }}</el-descriptions-item>
             <el-descriptions-item label="数据来源">{{ getSourceText(currentRow.source) }}</el-descriptions-item>
             <el-descriptions-item label="告警描述" :span="2">{{ currentRow.alarm_description }}</el-descriptions-item>
             
@@ -348,10 +348,9 @@ const getAlarmTypeName = () => {
 }
 
 const getAlarmSubtypeName = (code) => {
-  if (!code || !alarmTypes.value) return code || '未知'
-  // 将数字补零到5位，例如 3001 -> "03001"
-  const codeStr = String(code).padStart(5, '0')
-  return alarmTypes.value.host_behavior?.subtypes?.[codeStr] || code
+  if (code === undefined || code === null || !alarmTypes.value) return code ?? '未知'
+  const key = String(code)
+  return alarmTypes.value.host_behavior?.subtypes?.[key] || code
 }
 
 const loadAlarmTypes = async () => {
