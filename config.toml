@@ -12,6 +12,7 @@ auto_offset_reset = "earliest"
 network_attack = "alerts.network_attack"
 malicious_sample = "alerts.malicious_sample"
 host_behavior = "alerts.host_behavior"
+converged_alerts = "alerts.converged_alerts"
 
 [postgres]
 host = "127.0.0.1"

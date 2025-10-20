@@ -1,8 +1,8 @@
 <template>
   <div id="app">
     <el-container style="height: 100vh" direction="vertical">
-      <!-- 顶部标题栏 -->
-      <el-header style="background-color: #304156; height: 60px;">
+      <!-- 顶部标题栏 - 只在非嵌入模式下显示 -->
+      <!-- <el-header v-if="!isEmbedMode" style="background-color: #304156; height: 60px;">
         <div class="header-top">
           <div class="header-left">
             <h2>告警系统</h2>
@@ -33,12 +33,9 @@
               </el-button>
             </div>
           </div>
-          <!-- <div class="header-right">
-            <el-tag type="success">在线</el-tag>
-            <span style="margin-left: 15px">{{ currentTime }}</span>
-          </div> -->
+
         </div>
-      </el-header>
+      </el-header> -->
 
       <!-- Tab 导航栏 -->
       <!-- <el-header style="background-color: #fff; border-bottom: 1px solid #e6e6e6; height: auto; padding: 0;">
@@ -59,7 +56,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
@@ -67,6 +64,17 @@ const route = useRoute()
 const currentTime = ref('')
 const activeTab = ref('/network-attack')
 const activeNav = ref('/alert-data')
+
+// 判断是否为嵌入模式（默认为嵌入模式，不显示标题栏）
+const isEmbedMode = computed(() => {
+  // 默认不显示标题栏（嵌入模式）
+  // 只有在 URL 参数中明确设置 header=true 时才显示标题栏
+  const urlParams = new URLSearchParams(window.location.search)
+  const showHeader = urlParams.get('header') === 'true'
+  
+  // 返回 true 表示嵌入模式（不显示标题栏）
+  return !showHeader
+})
 
 const updateTime = () => {
   currentTime.value = new Date().toLocaleString('zh-CN', {
@@ -93,10 +101,7 @@ onMounted(() => {
   updateTime()
   timer = setInterval(updateTime, 1000)
   activeTab.value = route.path
-  // 设置顶部导航激活状态
-  if (route.meta.standalone) {
-    activeNav.value = route.path
-  }
+  activeNav.value = route.path
 })
 
 onUnmounted(() => {
@@ -107,10 +112,7 @@ onUnmounted(() => {
 
 watch(() => route.path, (newPath) => {
   activeTab.value = newPath
-  // 更新顶部导航激活状态
-  if (route.meta.standalone) {
-    activeNav.value = newPath
-  }
+  activeNav.value = newPath
 })
 </script>
 

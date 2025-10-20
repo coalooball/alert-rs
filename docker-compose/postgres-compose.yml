@@ -8,8 +8,8 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - postgres_data:/home/why/code/alerts/data
-      - ./postgres-init:/home/why/code/alerts/postgres-init
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
     environment:
       POSTGRES_DB: alert_system
       POSTGRES_USER: admin

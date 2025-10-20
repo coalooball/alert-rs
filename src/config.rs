@@ -27,6 +27,8 @@ pub struct TopicsConfig {
     pub network_attack: String,
     pub malicious_sample: String,
     pub host_behavior: String,
+    /// 聚合后的收敛告警推送主题
+    pub converged_alerts: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
