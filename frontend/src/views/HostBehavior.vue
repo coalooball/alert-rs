@@ -62,6 +62,16 @@
         <el-table-column prop="dst_port" label="目标端口" width="100" />
         <el-table-column prop="protocol" label="协议" width="100" />
         <el-table-column prop="created_at" label="创建时间" width="180" />
+        <el-table-column label="标签" width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <div v-if="row.tags && row.tags.length > 0" style="display: flex; flex-wrap: wrap; gap: 4px;">
+              <el-tag v-for="tag in row.tags" :key="tag.id" size="small" :color="tag.color" style="margin: 2px;">
+                {{ tag.name }}
+              </el-tag>
+            </div>
+            <span v-else style="color: #909399; font-size: 12px;">无标签</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="100" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" size="small" @click="showDetails(row)">详情</el-button>
@@ -152,6 +162,22 @@
               <el-input type="textarea" :rows="3" :value="formatJSON(currentRow.data)" readonly />
             </el-descriptions-item>
             <el-descriptions-item label="创建时间">{{ currentRow.created_at }}</el-descriptions-item>
+            
+            <el-descriptions-item label="标签" :span="2">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                <el-tag
+                  v-for="tag in alertTags"
+                  :key="tag.id"
+                  :color="tag.color"
+                  closable
+                  @close="handleRemoveTag(tag.id)"
+                  style="margin: 2px;"
+                >
+                  {{ tag.name }}
+                </el-tag>
+                <el-button type="primary" size="small" :icon="Plus" @click="openTagDialog">添加标签</el-button>
+              </div>
+            </el-descriptions-item>
           </el-descriptions>
         </el-tab-pane>
 
@@ -199,13 +225,40 @@
         </el-tab-pane>
       </el-tabs>
     </el-dialog>
+
+    <!-- 添加标签对话框 -->
+    <el-dialog v-model="tagDialogVisible" title="添加标签" width="500px">
+      <el-select
+        v-model="selectedTagIds"
+        multiple
+        placeholder="请选择标签"
+        style="width: 100%"
+        @change="handleTagSelectionChange"
+      >
+        <el-option
+          v-for="tag in allTags"
+          :key="tag.id"
+          :label="tag.name"
+          :value="tag.id"
+        >
+          <span style="float: left">{{ tag.name }}</span>
+          <span style="float: right; color: var(--el-text-color-secondary); font-size: 13px">
+            {{ tag.category }}
+          </span>
+        </el-option>
+      </el-select>
+      <template #footer>
+        <el-button @click="tagDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleConfirmTags">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Refresh } from '@element-plus/icons-vue'
-import { getHostBehaviors, getAlarmTypes, getRawHostBehaviorsByConvergedId } from '../api'
+import { Refresh, Plus } from '@element-plus/icons-vue'
+import { getHostBehaviors, getAlarmTypes, getRawHostBehaviorsByConvergedId, getAllTags, getAlertTags, addAlertTag, removeAlertTag } from '../api'
 import { ElMessage } from 'element-plus'
 
 const tableData = ref([])
@@ -227,6 +280,10 @@ const searchForm = ref({
   user_account: '',
   terminal_os: ''
 })
+const allTags = ref([])
+const alertTags = ref([])
+const tagDialogVisible = ref(false)
+const selectedTagIds = ref([])
 
 const loadData = async () => {
   loading.value = true
@@ -234,11 +291,27 @@ const loadData = async () => {
     const response = await getHostBehaviors(currentPage.value, pageSize.value)
     tableData.value = response.data.data
     total.value = response.data.total
+    
+    // 加载每个告警的标签
+    await loadTagsForAlerts()
+    
     applyFilter()
   } catch (error) {
     ElMessage.error('加载数据失败: ' + error.message)
   } finally {
     loading.value = false
+  }
+}
+
+const loadTagsForAlerts = async () => {
+  for (const alert of tableData.value) {
+    try {
+      const response = await getAlertTags('host_behavior', alert.id)
+      alert.tags = response.data.data || []
+    } catch (error) {
+      console.error(`加载告警 ${alert.id} 标签失败:`, error)
+      alert.tags = []
+    }
   }
 }
 
@@ -299,6 +372,9 @@ const showDetails = async (row) => {
   
   // 加载原始告警数据
   loadRawAlerts(row.id)
+  
+  // 加载告警的标签
+  loadCurrentAlertTags()
 }
 
 const loadRawAlerts = async (convergedAlertId) => {
@@ -362,8 +438,88 @@ const loadAlarmTypes = async () => {
   }
 }
 
+const loadAllTags = async () => {
+  try {
+    const response = await getAllTags()
+    allTags.value = response.data.data || []
+  } catch (error) {
+    console.error('加载标签列表失败:', error)
+  }
+}
+
+const loadCurrentAlertTags = async () => {
+  if (!currentRow.value) return
+  try {
+    const response = await getAlertTags('host_behavior', currentRow.value.id)
+    alertTags.value = response.data.data || []
+  } catch (error) {
+    console.error('加载告警标签失败:', error)
+    alertTags.value = []
+  }
+}
+
+const openTagDialog = () => {
+  selectedTagIds.value = alertTags.value.map(tag => tag.id)
+  tagDialogVisible.value = true
+}
+
+const handleAddTag = async (tagId) => {
+  try {
+    await addAlertTag('host_behavior', currentRow.value.id, tagId)
+    ElMessage.success('添加标签成功')
+    await loadCurrentAlertTags()
+    await loadTagsForAlerts()
+    applyFilter()
+  } catch (error) {
+    ElMessage.error('添加标签失败: ' + error.message)
+  }
+}
+
+const handleRemoveTag = async (tagId) => {
+  try {
+    await removeAlertTag('host_behavior', currentRow.value.id, tagId)
+    ElMessage.success('移除标签成功')
+    await loadCurrentAlertTags()
+    await loadTagsForAlerts()
+    applyFilter()
+  } catch (error) {
+    ElMessage.error('移除标签失败: ' + error.message)
+  }
+}
+
+const handleTagSelectionChange = (value) => {
+  // 处理标签选择变化
+}
+
+const handleConfirmTags = async () => {
+  const currentTagIds = alertTags.value.map(tag => tag.id)
+  const addedTagIds = selectedTagIds.value.filter(id => !currentTagIds.includes(id))
+  const removedTagIds = currentTagIds.filter(id => !selectedTagIds.value.includes(id))
+
+  try {
+    // 添加新标签
+    for (const tagId of addedTagIds) {
+      await addAlertTag('host_behavior', currentRow.value.id, tagId)
+    }
+
+    // 移除取消选择的标签
+    for (const tagId of removedTagIds) {
+      await removeAlertTag('host_behavior', currentRow.value.id, tagId)
+    }
+
+    ElMessage.success('标签更新成功')
+    tagDialogVisible.value = false
+    await loadCurrentAlertTags()
+    await loadTagsForAlerts()
+    applyFilter()
+  } catch (error) {
+    ElMessage.error('标签更新失败: ' + error.message)
+  }
+}
+
 onMounted(async () => {
   await loadAlarmTypes()
+  await loadAllTags()
   loadData()
 })
 </script>

@@ -368,15 +368,17 @@ const getAlertTypeName = (type) => {
 
 // 获取告警子类型名称
 const getAlertSubtypeName = (type, subtype) => {
-  if (!alarmTypes.value || !type || !subtype) return subtype
+  if (!alarmTypes.value || !type || subtype === null || subtype === undefined) return subtype
   const typeConfig = alarmTypes.value[type]
   if (!typeConfig || !typeConfig.subtypes) return subtype
-  return typeConfig.subtypes[subtype] || subtype
+  // 确保 subtype 是字符串，因为 config.toml 的 key 都是字符串
+  const subtypeKey = String(subtype)
+  return typeConfig.subtypes[subtypeKey] || subtype
 }
 
-onMounted(() => {
-  loadAlarmTypes()
-  loadAlertFields()
+onMounted(async () => {
+  await loadAlarmTypes()
+  await loadAlertFields()
   loadRules()
 })
 </script>

@@ -192,6 +192,13 @@ async fn main() {
         .route("/api/tags", post(api::tag_management::create_tag))
         .route("/api/tags/:id", put(api::tag_management::update_tag))
         .route("/api/tags/:id", delete(api::tag_management::delete_tag))
+        // 告警-标签关联路由
+        .route("/api/alerts/:alert_type/:alert_id/tags", get(api::alert_tag::get_alert_tags))
+        .route("/api/alerts/:alert_type/:alert_id/tags", post(api::alert_tag::add_alert_tag))
+        .route("/api/alerts/:alert_type/:alert_id/tags/batch", post(api::alert_tag::batch_add_alert_tags))
+        .route("/api/alerts/:alert_type/:alert_id/tags/:tag_id", delete(api::alert_tag::remove_alert_tag))
+        .route("/api/alerts/:alert_type/:alert_id/tags", delete(api::alert_tag::remove_all_alert_tags))
+        .route("/api/tags/:tag_id/alerts", get(api::alert_tag::get_alerts_by_tag))
         // 字段定义路由
         .route("/api/alert-fields", get(api::alert_fields::get_alert_fields))
         .route("/api/alert-fields/groups", get(api::alert_fields::get_common_field_groups))

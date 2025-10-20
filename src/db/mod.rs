@@ -7,6 +7,7 @@ pub mod tag_management;
 pub mod raw_alerts;
 pub mod converged_alerts;
 pub mod alert_mapping;
+pub mod alert_tag_mapping;
 pub mod convergence_rules;
 pub mod correlation_rules;
 pub mod filter_rules;
@@ -105,6 +106,9 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<PgPool> {
     // 标签管理表
     tag_management::create_tag_table(&pool).await?;
 
+    // 告警-标签映射表
+    alert_tag_mapping::create_alert_tag_mapping_table(&pool).await?;
+
     // 自动化规则表
     convergence_rules::create_convergence_rules_table(&pool).await?;
     correlation_rules::create_correlation_rules_table(&pool).await?;
@@ -121,6 +125,7 @@ pub async fn reset_database(pool: &PgPool) -> Result<()> {
     converged_alerts::drop_converged_alerts_tables(pool).await?;
     raw_alerts::drop_raw_alerts_tables(pool).await?;
     threat_event::drop_threat_event_table(pool).await?;
+    alert_tag_mapping::drop_alert_tag_mapping_table(pool).await?;
     tag_management::drop_tag_table(pool).await?;
     // 删除自动化规则表
     convergence_rules::drop_convergence_rules_table(pool).await?;
