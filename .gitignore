@@ -1,6 +1,7 @@
 /target
 .DS_Store
 *.tar
+*.tar.gz
 
 # 忽略 docker-compose 目录下除了 .yml 文件以外的所有内容
 docker-compose/*

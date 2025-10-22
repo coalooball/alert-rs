@@ -3,7 +3,7 @@
     <el-card class="config-card">
       <template #header>
         <div class="card-header">
-          <span>自动推送配置</span>
+          <span><i class="el-icon-setting"></i> 自动推送配置</span>
           <el-button type="primary" @click="saveConfig">保存配置</el-button>
         </div>
       </template>
@@ -34,7 +34,7 @@
     <el-card class="logs-card">
       <template #header>
         <div class="card-header">
-          <span>推送日志</span>
+          <span><i class="el-icon-document"></i> 推送日志</span>
           <el-select v-model="logAlertType" placeholder="告警类型" clearable style="width: 150px" @change="loadLogs">
             <el-option label="全部" :value="null" />
             <el-option label="网络攻击" :value="1" />
@@ -159,25 +159,49 @@ onMounted(() => {
 
 <style scoped>
 .association-model-container {
-  padding: 20px;
+  padding: 24px;
+  background-color: #f5f7fa;
+  min-height: 100vh;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-size: 16px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.card-header span i {
+  margin-right: 8px;
+  font-size: 18px;
+  vertical-align: middle;
 }
 
 .config-card {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
 }
 
 .config-form {
   max-width: 600px;
+  padding: 0 20px;
 }
 
 .logs-card {
-  margin-top: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+}
+
+el-table {
+  margin-top: 16px;
+}
+
+el-pagination {
+  margin-top: 24px;
+  justify-content: center;
 }
 </style>
 

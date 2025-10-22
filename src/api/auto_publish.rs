@@ -167,6 +167,18 @@ pub(crate) async fn do_publish(state: &AppState, window_minutes: u64) -> Result<
     }
 }
 
+// 辅助函数：确保时间戳是毫秒格式
+// 如果值小于 10000000000 (10位数)，认为是秒时间戳，需要转换为毫秒
+fn ensure_millis(timestamp: Option<i64>) -> Option<i64> {
+    timestamp.map(|ts| {
+        if ts < 10000000000 {
+            ts * 1000
+        } else {
+            ts
+        }
+    })
+}
+
 // 输出结构体（符合用户给定格式，字段为小驼峰，并补充 modelType 等）
 #[derive(Serialize)]
 #[allow(non_snake_case)]
@@ -238,7 +250,7 @@ fn to_payload_na(r: &crate::db::ConvergedNetworkAttackRecord) -> OutNetworkAttac
     OutNetworkAttack {
         model_type: "ALM_STR_NA",
         alarm_id: r.alarm_id.clone(),
-        alarm_date: r.alarm_date,
+        alarm_date: ensure_millis(r.alarm_date),
         alarm_severity: r.alarm_severity,
         alarm_name: r.alarm_name.clone(),
         alarm_description: r.alarm_description.clone(),
@@ -350,7 +362,7 @@ pub struct OutMaliciousSample {
 fn to_payload_ms(r: &crate::db::ConvergedMaliciousSampleRecord) -> OutMaliciousSample {
     OutMaliciousSample {
         model_type: "ALM_STR_MS",
-        alarm_date: r.alarm_date,
+        alarm_date: ensure_millis(r.alarm_date),
         alarm_description: r.alarm_description.clone(),
         alarm_id: r.alarm_id.clone(),
         alarm_name: r.alarm_name.clone(),
@@ -384,8 +396,8 @@ fn to_payload_ms(r: &crate::db::ConvergedMaliciousSampleRecord) -> OutMaliciousS
         language: r.language.clone(),
         rule: r.rule.clone(),
         target_content: r.target_content.clone(),
-        compile_date: r.compile_date,
-        last_analy_date: r.last_analy_date,
+        compile_date: ensure_millis(r.compile_date),
+        last_analy_date: ensure_millis(r.last_analy_date),
         sample_alarm_detail: r.sample_alarm_detail.clone(),
         updated_at: Utc::now().timestamp_millis(),
     }
@@ -469,7 +481,7 @@ pub struct OutHostBehavior {
 fn to_payload_hb(r: &crate::db::ConvergedHostBehaviorRecord) -> OutHostBehavior {
     OutHostBehavior {
         model_type: "ALM_CLU_ACT",
-        alarm_date: r.alarm_date,
+        alarm_date: ensure_millis(r.alarm_date),
         alarm_description: r.alarm_description.clone(),
         alarm_id: r.alarm_id.clone(),
         alarm_name: r.alarm_name.clone(),
