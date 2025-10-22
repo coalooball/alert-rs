@@ -7,12 +7,12 @@
 
     <el-table :data="rules" stripe style="width: 100%; margin-top: 20px;">
       <el-table-column prop="name" label="规则名称" width="150" />
-      <el-table-column prop="alert_type" label="告警类型" width="140">
+      <el-table-column prop="alert_type" label="告警类型" width="180" :show-overflow-tooltip="true">
         <template #default="scope">
           {{ getAlertTypeName(scope.row.alert_type) }}
         </template>
       </el-table-column>
-      <el-table-column prop="alert_subtype" label="告警子类型" width="140">
+      <el-table-column prop="alert_subtype" label="告警子类型" width="220" :show-overflow-tooltip="true">
         <template #default="scope">
           {{ getAlertSubtypeName(scope.row.alert_type, scope.row.alert_subtype) }}
         </template>
@@ -55,17 +55,17 @@
           <el-select v-model="formData.alert_type" placeholder="请选择告警类型" style="width: 100%;">
             <el-option 
               v-if="alarmTypes?.network_attack"
-              label="网络攻击告警" 
+              :label="formatAlertTypeLabel('network_attack')" 
               value="network_attack" 
             />
             <el-option 
               v-if="alarmTypes?.malicious_sample"
-              label="恶意样本告警" 
+              :label="formatAlertTypeLabel('malicious_sample')" 
               value="malicious_sample" 
             />
             <el-option 
               v-if="alarmTypes?.host_behavior"
-              label="主机行为告警" 
+              :label="formatAlertTypeLabel('host_behavior')" 
               value="host_behavior" 
             />
           </el-select>
@@ -171,7 +171,7 @@ const availableSubtypes = computed(() => {
   
   return Object.entries(typeConfig.subtypes).map(([code, name]) => ({
     value: code,
-    label: name
+    label: `${name}（${code}）`
   }))
 })
 
@@ -375,18 +375,20 @@ const handleSave = async () => {
   }
 }
 
-// 获取告警类型名称
+// 获取告警类型显示（中文（数字））
+const typeNumberMap = { network_attack: 1, malicious_sample: 2, host_behavior: 3 }
+const formatAlertTypeLabel = (type) => {
+  const conf = alarmTypes.value?.[type]
+  const name = conf?.name || type
+  const code = typeNumberMap[type]
+  return code ? `${name}（${code}）` : name
+}
 const getAlertTypeName = (type) => {
-  if (!alarmTypes.value || !type) return type
-  const typeMap = {
-    'network_attack': alarmTypes.value.network_attack?.name,
-    'malicious_sample': alarmTypes.value.malicious_sample?.name,
-    'host_behavior': alarmTypes.value.host_behavior?.name
-  }
-  return typeMap[type] || type
+  if (!type) return type
+  return formatAlertTypeLabel(type)
 }
 
-// 获取告警子类型名称
+// 获取告警子类型显示（中文（数字））
 const getAlertSubtypeName = (type, subtype) => {
   if (!alarmTypes.value || !type || subtype === null || subtype === undefined || subtype === '') {
     return subtype || '-'
@@ -395,13 +397,11 @@ const getAlertSubtypeName = (type, subtype) => {
   if (!typeConfig || !typeConfig.subtypes) {
     return subtype
   }
-  // 确保 subtype 是字符串，因为 config.toml 的 key 都是字符串
   const subtypeKey = String(subtype).trim()
   const name = typeConfig.subtypes[subtypeKey]
   if (name) {
-    return name
+    return `${name}（${subtypeKey}）`
   }
-  // 如果找不到，打印调试信息
   console.warn(`未找到子类型映射: type=${type}, subtype=${subtypeKey}, available keys:`, Object.keys(typeConfig.subtypes))
   return subtype
 }

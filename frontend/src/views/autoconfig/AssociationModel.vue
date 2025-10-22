@@ -35,11 +35,11 @@
       <template #header>
         <div class="card-header">
           <span><i class="el-icon-document"></i> 推送日志</span>
-          <el-select v-model="logAlertType" placeholder="告警类型" clearable style="width: 150px" @change="loadLogs">
+          <el-select v-model="logAlertType" placeholder="告警类型" clearable style="width: 180px" @change="loadLogs">
             <el-option label="全部" :value="null" />
-            <el-option label="网络攻击" :value="1" />
-            <el-option label="恶意样本" :value="2" />
-            <el-option label="主机行为" :value="3" />
+            <el-option label="网络攻击（1）" :value="1" />
+            <el-option label="恶意样本（2）" :value="2" />
+            <el-option label="主机行为（3）" :value="3" />
           </el-select>
         </div>
       </template>
