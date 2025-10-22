@@ -7,9 +7,9 @@ use serde::Deserialize;
 use std::sync::Arc;
 use uuid::Uuid;
 
+use super::{ErrorResponse, SuccessResponse};
 use crate::db::alert_tag_mapping::{self, AlertTagMappingInput};
 use crate::AppState;
-use super::{ErrorResponse, SuccessResponse};
 
 /// 添加标签到告警的请求体
 #[derive(Debug, Deserialize)]
@@ -86,13 +86,8 @@ pub async fn batch_add_alert_tags(
     Path((alert_type, alert_id)): Path<(String, Uuid)>,
     Json(req): Json<BatchAddAlertTagsRequest>,
 ) -> impl IntoResponse {
-    match alert_tag_mapping::add_alert_tags_batch(
-        &state.pool,
-        alert_id,
-        &alert_type,
-        &req.tag_ids,
-    )
-    .await
+    match alert_tag_mapping::add_alert_tags_batch(&state.pool, alert_id, &alert_type, &req.tag_ids)
+        .await
     {
         Ok(mappings) => {
             let response = SuccessResponse {
@@ -187,4 +182,3 @@ pub async fn get_alerts_by_tag(
         }
     }
 }
-

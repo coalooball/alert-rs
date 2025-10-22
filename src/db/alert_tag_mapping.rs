@@ -32,7 +32,7 @@ pub async fn create_alert_tag_mapping_table(pool: &PgPool) -> Result<()> {
             tag_id UUID NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
             created_at TIMESTAMPTZ DEFAULT now(),
             UNIQUE(alert_id, alert_type, tag_id)
-        )"
+        )",
     )
     .execute(pool)
     .await?;
@@ -45,7 +45,7 @@ pub async fn create_alert_tag_mapping_table(pool: &PgPool) -> Result<()> {
     .await?;
 
     sqlx::query(
-        "CREATE INDEX IF NOT EXISTS idx_alert_tag_mapping_tag ON alert_tag_mapping(tag_id)"
+        "CREATE INDEX IF NOT EXISTS idx_alert_tag_mapping_tag ON alert_tag_mapping(tag_id)",
     )
     .execute(pool)
     .await?;
@@ -62,13 +62,16 @@ pub async fn drop_alert_tag_mapping_table(pool: &PgPool) -> Result<()> {
 }
 
 /// 添加告警-标签映射
-pub async fn add_alert_tag(pool: &PgPool, input: &AlertTagMappingInput) -> Result<AlertTagMappingRecord> {
+pub async fn add_alert_tag(
+    pool: &PgPool,
+    input: &AlertTagMappingInput,
+) -> Result<AlertTagMappingRecord> {
     let record = sqlx::query_as::<_, AlertTagMappingRecord>(
         "INSERT INTO alert_tag_mapping (alert_id, alert_type, tag_id)
          VALUES ($1, $2, $3)
          ON CONFLICT (alert_id, alert_type, tag_id) DO UPDATE 
          SET created_at = alert_tag_mapping.created_at
-         RETURNING *"
+         RETURNING *",
     )
     .bind(input.alert_id)
     .bind(&input.alert_type)
@@ -88,7 +91,7 @@ pub async fn remove_alert_tag(
 ) -> Result<()> {
     sqlx::query(
         "DELETE FROM alert_tag_mapping 
-         WHERE alert_id = $1 AND alert_type = $2 AND tag_id = $3"
+         WHERE alert_id = $1 AND alert_type = $2 AND tag_id = $3",
     )
     .bind(alert_id)
     .bind(alert_type)
@@ -109,7 +112,7 @@ pub async fn get_alert_tags(
         "SELECT t.* FROM tags t
          INNER JOIN alert_tag_mapping atm ON t.id = atm.tag_id
          WHERE atm.alert_id = $1 AND atm.alert_type = $2
-         ORDER BY t.name"
+         ORDER BY t.name",
     )
     .bind(alert_id)
     .bind(alert_type)
@@ -120,12 +123,9 @@ pub async fn get_alert_tags(
 }
 
 /// 获取某个标签关联的所有告警
-pub async fn get_alerts_by_tag(
-    pool: &PgPool,
-    tag_id: Uuid,
-) -> Result<Vec<AlertTagMappingRecord>> {
+pub async fn get_alerts_by_tag(pool: &PgPool, tag_id: Uuid) -> Result<Vec<AlertTagMappingRecord>> {
     let mappings = sqlx::query_as::<_, AlertTagMappingRecord>(
-        "SELECT * FROM alert_tag_mapping WHERE tag_id = $1 ORDER BY created_at DESC"
+        "SELECT * FROM alert_tag_mapping WHERE tag_id = $1 ORDER BY created_at DESC",
     )
     .bind(tag_id)
     .fetch_all(pool)
@@ -135,18 +135,12 @@ pub async fn get_alerts_by_tag(
 }
 
 /// 删除某个告警的所有标签
-pub async fn remove_all_alert_tags(
-    pool: &PgPool,
-    alert_id: Uuid,
-    alert_type: &str,
-) -> Result<()> {
-    sqlx::query(
-        "DELETE FROM alert_tag_mapping WHERE alert_id = $1 AND alert_type = $2"
-    )
-    .bind(alert_id)
-    .bind(alert_type)
-    .execute(pool)
-    .await?;
+pub async fn remove_all_alert_tags(pool: &PgPool, alert_id: Uuid, alert_type: &str) -> Result<()> {
+    sqlx::query("DELETE FROM alert_tag_mapping WHERE alert_id = $1 AND alert_type = $2")
+        .bind(alert_id)
+        .bind(alert_type)
+        .execute(pool)
+        .await?;
 
     Ok(())
 }
@@ -172,4 +166,3 @@ pub async fn add_alert_tags_batch(
 
     Ok(records)
 }
-

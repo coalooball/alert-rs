@@ -51,22 +51,18 @@ pub async fn create_tag_rules_table(pool: &PgPool) -> Result<()> {
             enabled BOOLEAN NOT NULL DEFAULT true,
             created_at TIMESTAMPTZ DEFAULT now(),
             updated_at TIMESTAMPTZ DEFAULT now()
-        )"
+        )",
     )
     .execute(pool)
     .await?;
 
-    sqlx::query(
-        "CREATE INDEX IF NOT EXISTS idx_tag_rules_alert_type ON tag_rules(alert_type)"
-    )
-    .execute(pool)
-    .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_tag_rules_alert_type ON tag_rules(alert_type)")
+        .execute(pool)
+        .await?;
 
-    sqlx::query(
-        "CREATE INDEX IF NOT EXISTS idx_tag_rules_enabled ON tag_rules(enabled)"
-    )
-    .execute(pool)
-    .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_tag_rules_enabled ON tag_rules(enabled)")
+        .execute(pool)
+        .await?;
 
     Ok(())
 }
@@ -85,7 +81,7 @@ pub async fn create_tag_rule(pool: &PgPool, input: &TagRuleInput) -> Result<TagR
         "INSERT INTO tag_rules (name, alert_type, alert_subtype, condition_field, 
                                 condition_operator, condition_value, tags, description, enabled)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING *"
+         RETURNING *",
     )
     .bind(&input.name)
     .bind(&input.alert_type)
@@ -103,14 +99,18 @@ pub async fn create_tag_rule(pool: &PgPool, input: &TagRuleInput) -> Result<TagR
 }
 
 /// 更新标签规则
-pub async fn update_tag_rule(pool: &PgPool, id: Uuid, input: &TagRuleInput) -> Result<TagRuleRecord> {
+pub async fn update_tag_rule(
+    pool: &PgPool,
+    id: Uuid,
+    input: &TagRuleInput,
+) -> Result<TagRuleRecord> {
     let record = sqlx::query_as::<_, TagRuleRecord>(
         "UPDATE tag_rules
          SET name = $2, alert_type = $3, alert_subtype = $4, condition_field = $5,
              condition_operator = $6, condition_value = $7, tags = $8, 
              description = $9, enabled = $10, updated_at = now()
          WHERE id = $1
-         RETURNING *"
+         RETURNING *",
     )
     .bind(id)
     .bind(&input.name)
@@ -140,12 +140,10 @@ pub async fn delete_tag_rule(pool: &PgPool, id: Uuid) -> Result<()> {
 
 /// 根据ID查询单个标签规则
 pub async fn get_tag_rule_by_id(pool: &PgPool, id: Uuid) -> Result<TagRuleRecord> {
-    let record = sqlx::query_as::<_, TagRuleRecord>(
-        "SELECT * FROM tag_rules WHERE id = $1"
-    )
-    .bind(id)
-    .fetch_one(pool)
-    .await?;
+    let record = sqlx::query_as::<_, TagRuleRecord>("SELECT * FROM tag_rules WHERE id = $1")
+        .bind(id)
+        .fetch_one(pool)
+        .await?;
 
     Ok(record)
 }
@@ -159,7 +157,7 @@ pub async fn query_tag_rules(
     let offset = (page - 1) * page_size;
 
     let records = sqlx::query_as::<_, TagRuleRecord>(
-        "SELECT * FROM tag_rules ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+        "SELECT * FROM tag_rules ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(page_size as i64)
     .bind(offset as i64)
@@ -177,11 +175,10 @@ pub async fn query_tag_rules(
 #[allow(dead_code)]
 pub async fn get_enabled_tag_rules(pool: &PgPool) -> Result<Vec<TagRuleRecord>> {
     let records = sqlx::query_as::<_, TagRuleRecord>(
-        "SELECT * FROM tag_rules WHERE enabled = true ORDER BY created_at DESC"
+        "SELECT * FROM tag_rules WHERE enabled = true ORDER BY created_at DESC",
     )
     .fetch_all(pool)
     .await?;
 
     Ok(records)
 }
-

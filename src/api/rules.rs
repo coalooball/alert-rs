@@ -425,4 +425,3 @@ pub async fn delete_tag_rule(
         }
     }
 }
-

@@ -1,5 +1,5 @@
 //! 原始告警表及相关操作
-//! 
+//!
 //! 本模块包含三类原始告警表的定义和操作：
 //! - 网络攻击告警表 (network_attack_alerts)
 //! - 恶意样本告警表 (malicious_sample_alerts)  
@@ -12,9 +12,10 @@
 //! - 分页查询告警数据
 
 use anyhow::Result;
+use chrono::{DateTime, Utc};
+use serde_json::Value;
 use sqlx::PgPool;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 use crate::models::{HostBehaviorAlert, MaliciousSampleAlert, NetworkAttackAlert};
 
@@ -152,6 +153,7 @@ pub struct HostBehaviorRecord {
 pub struct InvalidAlertRecord {
     pub id: Uuid,
     pub data: serde_json::Value,
+    pub alert_type: String, // 新增字段
     pub error: String,
     pub created_at: DateTime<Utc>,
 }
@@ -197,7 +199,7 @@ pub async fn create_raw_alerts_tables(pool: &PgPool) -> Result<()> {
             vul_desc TEXT,
             data JSONB,
             created_at TIMESTAMPTZ DEFAULT now()
-        )"
+        )",
     )
     .execute(pool)
     .await?;
@@ -248,7 +250,7 @@ pub async fn create_raw_alerts_tables(pool: &PgPool) -> Result<()> {
             sample_alarm_detail TEXT,
             data JSONB,
             created_at TIMESTAMPTZ DEFAULT now()
-        )"
+        )",
     )
     .execute(pool)
     .await?;
@@ -295,7 +297,7 @@ pub async fn create_raw_alerts_tables(pool: &PgPool) -> Result<()> {
             file_path TEXT,
             data JSONB,
             created_at TIMESTAMPTZ DEFAULT now()
-        )"
+        )",
     )
     .execute(pool)
     .await?;
@@ -305,9 +307,10 @@ pub async fn create_raw_alerts_tables(pool: &PgPool) -> Result<()> {
         "CREATE TABLE IF NOT EXISTS invalid_alerts (
             id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
             data JSONB NOT NULL,
+            alert_type TEXT NOT NULL,
             error TEXT NOT NULL,
             created_at TIMESTAMPTZ DEFAULT now()
-        )"
+        )",
     )
     .execute(pool)
     .await?;
@@ -336,14 +339,29 @@ pub async fn drop_raw_alerts_tables(pool: &PgPool) -> Result<()> {
 // 插入操作
 // ============================================================================
 
+/// 统一的原始告警存储函数
+pub async fn store_raw_alert(pool: &PgPool, alert_json: &Value, alert_type: &str) -> Result<Uuid> {
+    let id = match alert_type {
+        "network_attack" => {
+            let alert: NetworkAttackAlert = serde_json::from_value(alert_json.clone())?;
+            insert_network_attack(pool, &alert).await?
+        }
+        "malicious_sample" => {
+            let alert: MaliciousSampleAlert = serde_json::from_value(alert_json.clone())?;
+            insert_malicious_sample(pool, &alert).await?
+        }
+        "host_behavior" => {
+            let alert: HostBehaviorAlert = serde_json::from_value(alert_json.clone())?;
+            insert_host_behavior(pool, &alert).await?
+        }
+        _ => return Err(anyhow::anyhow!("Unsupported alert type: {}", alert_type)),
+    };
+    Ok(id)
+}
+
 pub async fn insert_network_attack(pool: &PgPool, alert: &NetworkAttackAlert) -> Result<Uuid> {
     let procedure_technique_id = alert.procedure_technique_id.as_ref().map(|v| {
-        serde_json::Value::Array(
-            v.iter()
-                .cloned()
-                .map(serde_json::Value::String)
-                .collect(),
-        )
+        serde_json::Value::Array(v.iter().cloned().map(serde_json::Value::String).collect())
     });
 
     let id: (Uuid,) = sqlx::query_as(
@@ -358,7 +376,7 @@ pub async fn insert_network_attack(pool: &PgPool, alert: &NetworkAttackAlert) ->
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
             $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
             $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
-        ) RETURNING id"
+        ) RETURNING id",
     )
     .bind(&alert.alarm_id)
     .bind(alert.alarm_date)
@@ -398,12 +416,7 @@ pub async fn insert_network_attack(pool: &PgPool, alert: &NetworkAttackAlert) ->
 
 pub async fn insert_malicious_sample(pool: &PgPool, alert: &MaliciousSampleAlert) -> Result<Uuid> {
     let procedure_technique_id = alert.procedure_technique_id.as_ref().map(|v| {
-        serde_json::Value::Array(
-            v.iter()
-                .cloned()
-                .map(serde_json::Value::String)
-                .collect(),
-        )
+        serde_json::Value::Array(v.iter().cloned().map(serde_json::Value::String).collect())
     });
 
     let sample_alarm_engine = alert.sample_alarm_engine.as_ref().map(|v| {
@@ -430,7 +443,7 @@ pub async fn insert_malicious_sample(pool: &PgPool, alert: &MaliciousSampleAlert
             $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
             $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
             $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41
-        ) RETURNING id"
+        ) RETURNING id",
     )
     .bind(&alert.alarm_id)
     .bind(alert.alarm_date)
@@ -481,12 +494,7 @@ pub async fn insert_malicious_sample(pool: &PgPool, alert: &MaliciousSampleAlert
 
 pub async fn insert_host_behavior(pool: &PgPool, alert: &HostBehaviorAlert) -> Result<Uuid> {
     let procedure_technique_id = alert.procedure_technique_id.as_ref().map(|v| {
-        serde_json::Value::Array(
-            v.iter()
-                .cloned()
-                .map(serde_json::Value::String)
-                .collect(),
-        )
+        serde_json::Value::Array(v.iter().cloned().map(serde_json::Value::String).collect())
     });
 
     let id: (Uuid,) = sqlx::query_as(
@@ -505,7 +513,7 @@ pub async fn insert_host_behavior(pool: &PgPool, alert: &HostBehaviorAlert) -> R
             $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
             $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
             $31, $32, $33, $34, $35, $36, $37
-        ) RETURNING id"
+        ) RETURNING id",
     )
     .bind(&alert.alarm_id)
     .bind(alert.alarm_date)
@@ -550,15 +558,19 @@ pub async fn insert_host_behavior(pool: &PgPool, alert: &HostBehaviorAlert) -> R
     Ok(id.0)
 }
 
-pub async fn insert_invalid_alert(pool: &PgPool, data: serde_json::Value, error: String) -> Result<()> {
-    sqlx::query(
-        "INSERT INTO invalid_alerts (data, error) VALUES ($1, $2)"
-    )
-    .bind(&data)
-    .bind(&error)
-    .execute(pool)
-    .await?;
-    
+pub async fn store_invalid_alert(
+    pool: &PgPool,
+    data: &Value,
+    alert_type: &str,
+    error: String,
+) -> Result<()> {
+    sqlx::query("INSERT INTO invalid_alerts (data, alert_type, error) VALUES ($1, $2, $3)")
+        .bind(data)
+        .bind(alert_type)
+        .bind(&error)
+        .execute(pool)
+        .await?;
+
     Ok(())
 }
 
@@ -567,67 +579,83 @@ pub async fn insert_invalid_alert(pool: &PgPool, data: serde_json::Value, error:
 // ============================================================================
 
 #[allow(dead_code)]
-pub async fn query_network_attacks(pool: &PgPool, page: u64, page_size: u64) -> Result<(Vec<NetworkAttackRecord>, u64)> {
+pub async fn query_network_attacks(
+    pool: &PgPool,
+    page: u64,
+    page_size: u64,
+) -> Result<(Vec<NetworkAttackRecord>, u64)> {
     let offset = (page - 1) * page_size;
-    
+
     let records = sqlx::query_as::<_, NetworkAttackRecord>(
-        "SELECT * FROM network_attack_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+        "SELECT * FROM network_attack_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(page_size as i64)
     .bind(offset as i64)
     .fetch_all(pool)
     .await?;
-    
+
     let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM network_attack_alerts")
         .fetch_one(pool)
         .await?;
-    
+
     Ok((records, total.0 as u64))
 }
 
 #[allow(dead_code)]
-pub async fn query_malicious_samples(pool: &PgPool, page: u64, page_size: u64) -> Result<(Vec<MaliciousSampleRecord>, u64)> {
+pub async fn query_malicious_samples(
+    pool: &PgPool,
+    page: u64,
+    page_size: u64,
+) -> Result<(Vec<MaliciousSampleRecord>, u64)> {
     let offset = (page - 1) * page_size;
-    
+
     let records = sqlx::query_as::<_, MaliciousSampleRecord>(
-        "SELECT * FROM malicious_sample_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+        "SELECT * FROM malicious_sample_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(page_size as i64)
     .bind(offset as i64)
     .fetch_all(pool)
     .await?;
-    
+
     let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM malicious_sample_alerts")
         .fetch_one(pool)
         .await?;
-    
+
     Ok((records, total.0 as u64))
 }
 
 #[allow(dead_code)]
-pub async fn query_host_behaviors(pool: &PgPool, page: u64, page_size: u64) -> Result<(Vec<HostBehaviorRecord>, u64)> {
+pub async fn query_host_behaviors(
+    pool: &PgPool,
+    page: u64,
+    page_size: u64,
+) -> Result<(Vec<HostBehaviorRecord>, u64)> {
     let offset = (page - 1) * page_size;
-    
+
     let records = sqlx::query_as::<_, HostBehaviorRecord>(
-        "SELECT * FROM host_behavior_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+        "SELECT * FROM host_behavior_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(page_size as i64)
     .bind(offset as i64)
     .fetch_all(pool)
     .await?;
-    
+
     let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM host_behavior_alerts")
         .fetch_one(pool)
         .await?;
-    
+
     Ok((records, total.0 as u64))
 }
 
-pub async fn query_invalid_alerts(pool: &PgPool, page: u64, page_size: u64) -> Result<(Vec<InvalidAlertRecord>, u64)> {
+pub async fn query_invalid_alerts(
+    pool: &PgPool,
+    page: u64,
+    page_size: u64,
+) -> Result<(Vec<InvalidAlertRecord>, u64)> {
     let offset = (page - 1) * page_size;
-    
+
     let records = sqlx::query_as::<_, InvalidAlertRecord>(
-        "SELECT * FROM invalid_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+        "SELECT * FROM invalid_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(page_size as i64)
     .bind(offset as i64)
@@ -654,7 +682,7 @@ pub async fn query_raw_network_attacks_by_converged_id(
     let raw_ids: Vec<(Uuid,)> = sqlx::query_as(
         "SELECT raw_alert_id FROM alert_convergence_mapping 
          WHERE converged_alert_id = $1 AND alert_type = 1
-         ORDER BY created_at ASC"
+         ORDER BY created_at ASC",
     )
     .bind(converged_id)
     .fetch_all(pool)
@@ -671,7 +699,7 @@ pub async fn query_raw_network_attacks_by_converged_id(
     let records = sqlx::query_as::<_, NetworkAttackRecord>(
         "SELECT * FROM network_attack_alerts 
          WHERE id = ANY($1)
-         ORDER BY created_at ASC"
+         ORDER BY created_at ASC",
     )
     .bind(&ids)
     .fetch_all(pool)
@@ -689,7 +717,7 @@ pub async fn query_raw_malicious_samples_by_converged_id(
     let raw_ids: Vec<(Uuid,)> = sqlx::query_as(
         "SELECT raw_alert_id FROM alert_convergence_mapping 
          WHERE converged_alert_id = $1 AND alert_type = 2
-         ORDER BY created_at ASC"
+         ORDER BY created_at ASC",
     )
     .bind(converged_id)
     .fetch_all(pool)
@@ -706,7 +734,7 @@ pub async fn query_raw_malicious_samples_by_converged_id(
     let records = sqlx::query_as::<_, MaliciousSampleRecord>(
         "SELECT * FROM malicious_sample_alerts 
          WHERE id = ANY($1)
-         ORDER BY created_at ASC"
+         ORDER BY created_at ASC",
     )
     .bind(&ids)
     .fetch_all(pool)
@@ -724,7 +752,7 @@ pub async fn query_raw_host_behaviors_by_converged_id(
     let raw_ids: Vec<(Uuid,)> = sqlx::query_as(
         "SELECT raw_alert_id FROM alert_convergence_mapping 
          WHERE converged_alert_id = $1 AND alert_type = 3
-         ORDER BY created_at ASC"
+         ORDER BY created_at ASC",
     )
     .bind(converged_id)
     .fetch_all(pool)
@@ -741,7 +769,7 @@ pub async fn query_raw_host_behaviors_by_converged_id(
     let records = sqlx::query_as::<_, HostBehaviorRecord>(
         "SELECT * FROM host_behavior_alerts 
          WHERE id = ANY($1)
-         ORDER BY created_at ASC"
+         ORDER BY created_at ASC",
     )
     .bind(&ids)
     .fetch_all(pool)
@@ -749,4 +777,3 @@ pub async fn query_raw_host_behaviors_by_converged_id(
 
     Ok(records)
 }
-

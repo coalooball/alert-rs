@@ -1,6 +1,6 @@
-use axum::{extract::Json, response::Json as JsonResponse};
-use crate::dsl::{parse_converge_rule, parse_correlate_rule, validate_fields, validator};
 use crate::dsl::types::{CompileRequest, CompileResponse};
+use crate::dsl::{parse_converge_rule, parse_correlate_rule, validate_fields, validator};
+use axum::{extract::Json, response::Json as JsonResponse};
 
 /// 编译收敛规则
 pub async fn compile_converge_rule(
@@ -10,34 +10,22 @@ pub async fn compile_converge_rule(
         Ok(rule) => {
             // 验证字段
             match validate_fields(&rule) {
-                Ok(_) => {
-                    JsonResponse(CompileResponse::success(
-                        format!(
-                            "DSL 规则语法正确，可以正常使用。已验证规则结构、字段名称和操作符。\n\
+                Ok(_) => JsonResponse(CompileResponse::success(format!(
+                    "DSL 规则语法正确，可以正常使用。已验证规则结构、字段名称和操作符。\n\
                             - 条件子句: {} 个\n\
                             - 分组字段: {} 个\n\
                             - 时间窗口: {} {:?}\n\
                             - 收敛阈值: {}",
-                            rule.condition.clauses.len(),
-                            rule.group_by.len(),
-                            rule.window.value,
-                            rule.window.unit,
-                            rule.threshold
-                        )
-                    ))
-                }
-                Err(e) => {
-                    JsonResponse(CompileResponse::error(
-                        format!("字段验证失败: {}", e)
-                    ))
-                }
+                    rule.condition.clauses.len(),
+                    rule.group_by.len(),
+                    rule.window.value,
+                    rule.window.unit,
+                    rule.threshold
+                ))),
+                Err(e) => JsonResponse(CompileResponse::error(format!("字段验证失败: {}", e))),
             }
         }
-        Err(e) => {
-            JsonResponse(CompileResponse::error(
-                format!("语法解析失败: {}", e)
-            ))
-        }
+        Err(e) => JsonResponse(CompileResponse::error(format!("语法解析失败: {}", e))),
     }
 }
 
@@ -74,11 +62,7 @@ pub async fn compile_correlate_rule(
                 }
             }
         }
-        Err(e) => {
-            JsonResponse(CompileResponse::error(
-                format!("语法解析失败: {}", e)
-            ))
-        }
+        Err(e) => JsonResponse(CompileResponse::error(format!("语法解析失败: {}", e))),
     }
 }
 
@@ -93,7 +77,8 @@ mod tests {
                 WHERE alarm_severity >= 3
                 GROUP BY src_ip, alarm_type
                 WINDOW 5m
-                THRESHOLD 10"#.to_string(),
+                THRESHOLD 10"#
+                .to_string(),
         };
 
         let response = compile_converge_rule(Json(request)).await;
@@ -111,7 +96,8 @@ mod tests {
                 GENERATE
                     SEVERITY 3
                     NAME "攻击链检测"
-                    DESCRIPTION "检测到攻击链活动""#.to_string(),
+                    DESCRIPTION "检测到攻击链活动""#
+                .to_string(),
         };
 
         let response = compile_correlate_rule(Json(request)).await;
@@ -128,13 +114,19 @@ mod tests {
                 WHERE invalid_field_name >= 3
                 GROUP BY src_ip
                 WINDOW 5m
-                THRESHOLD 10"#.to_string(),
+                THRESHOLD 10"#
+                .to_string(),
         };
 
         let response = compile_converge_rule(Json(request)).await;
         assert!(!response.0.success);
         assert!(response.0.error.is_some());
-        assert!(response.0.error.as_ref().unwrap().contains("invalid_field_name"));
+        assert!(response
+            .0
+            .error
+            .as_ref()
+            .unwrap()
+            .contains("invalid_field_name"));
     }
 
     #[tokio::test]
@@ -144,7 +136,8 @@ mod tests {
                 WHERE alarm_severity >= 3
                 GROUP BY
                 WINDOW 5m
-                THRESHOLD 10"#.to_string(),
+                THRESHOLD 10"#
+                .to_string(),
         };
 
         let response = compile_converge_rule(Json(request)).await;
@@ -163,7 +156,8 @@ mod tests {
                 GENERATE
                     SEVERITY 3
                     NAME "测试"
-                    DESCRIPTION "测试""#.to_string(),
+                    DESCRIPTION "测试""#
+                .to_string(),
         };
 
         let response = compile_correlate_rule(Json(request)).await;
@@ -172,4 +166,3 @@ mod tests {
         assert!(response.0.error.as_ref().unwrap().contains("unknown_event"));
     }
 }
-

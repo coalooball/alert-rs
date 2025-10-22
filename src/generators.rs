@@ -179,7 +179,11 @@ pub fn generate_malicious_sample_alert() -> MaliciousSampleAlert {
         alarm_type: 2,
         alarm_subtype: subtype,
         source: rng.gen_range(1..=4),
-        control_rule_id: Some(format!("RULE-{}-2024-{:03}", type_name, rng.gen_range(1..999))),
+        control_rule_id: Some(format!(
+            "RULE-{}-2024-{:03}",
+            type_name,
+            rng.gen_range(1..999)
+        )),
         control_task_id: Some(format!("TASK-MAL-2024-{:03}", rng.gen_range(100..999))),
         procedure_technique_id: Some(vec!["T1055".to_string(), "T1566.001".to_string()]),
         session_id: Some(String::new()),
@@ -190,7 +194,10 @@ pub fn generate_malicious_sample_alert() -> MaliciousSampleAlert {
         dst_port: None,
         protocol: Some(String::new()),
         terminal_id: Some(format!("TERM-FIN-PC-{:03}", rng.gen_range(1..100))),
-        source_file_path: Some(format!("/data/samples/2024/12/25/sample_{}.exe", timestamp % 999999)),
+        source_file_path: Some(format!(
+            "/data/samples/2024/12/25/sample_{}.exe",
+            timestamp % 999999
+        )),
         sample_source: Some(rng.gen_range(1..=3)),
         md5: Some(format!("{:032x}", rng.gen::<u128>())),
         sha1: Some(format!("{:040x}", rng.gen::<u128>() as u128)),
@@ -214,7 +221,10 @@ pub fn generate_malicious_sample_alert() -> MaliciousSampleAlert {
         target_content: Some(String::new()),
         compile_date: Some(timestamp - rng.gen_range(86400000..31536000000)),
         last_analy_date: Some(timestamp),
-        sample_alarm_detail: Some(format!(r#"[{{"rule_name":"{}_{}_2024"}}]"#, family, type_name)),
+        sample_alarm_detail: Some(format!(
+            r#"[{{"rule_name":"{}_{}_2024"}}]"#,
+            family, type_name
+        )),
         data: None,
     }
 }
@@ -315,7 +325,10 @@ pub fn generate_host_behavior_alert() -> HostBehaviorAlert {
             String::new()
         }),
         terminal_id: Some(format!("TERM-SVR-{:03}", rng.gen_range(1..100))),
-        source_file_path: Some(format!("/data/logs/2024/12/25/host_{}.log", timestamp % 999999)),
+        source_file_path: Some(format!(
+            "/data/logs/2024/12/25/host_{}.log",
+            timestamp % 999999
+        )),
         host_name: Some(hostnames[rng.gen_range(0..hostnames.len())].to_string()),
         terminal_ip: Some(ips[rng.gen_range(0..ips.len())].to_string()),
         user_account: Some(if subtype == 3001 {

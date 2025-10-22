@@ -45,22 +45,20 @@ pub async fn create_filter_rules_table(pool: &PgPool) -> Result<()> {
             enabled BOOLEAN NOT NULL DEFAULT true,
             created_at TIMESTAMPTZ DEFAULT now(),
             updated_at TIMESTAMPTZ DEFAULT now()
-        )"
+        )",
     )
     .execute(pool)
     .await?;
 
     sqlx::query(
-        "CREATE INDEX IF NOT EXISTS idx_filter_rules_alert_type ON filter_rules(alert_type)"
+        "CREATE INDEX IF NOT EXISTS idx_filter_rules_alert_type ON filter_rules(alert_type)",
     )
     .execute(pool)
     .await?;
 
-    sqlx::query(
-        "CREATE INDEX IF NOT EXISTS idx_filter_rules_enabled ON filter_rules(enabled)"
-    )
-    .execute(pool)
-    .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_filter_rules_enabled ON filter_rules(enabled)")
+        .execute(pool)
+        .await?;
 
     Ok(())
 }
@@ -74,7 +72,10 @@ pub async fn drop_filter_rules_table(pool: &PgPool) -> Result<()> {
 }
 
 /// 创建过滤规则
-pub async fn create_filter_rule(pool: &PgPool, input: &FilterRuleInput) -> Result<FilterRuleRecord> {
+pub async fn create_filter_rule(
+    pool: &PgPool,
+    input: &FilterRuleInput,
+) -> Result<FilterRuleRecord> {
     let record = sqlx::query_as::<_, FilterRuleRecord>(
         "INSERT INTO filter_rules (name, alert_type, alert_subtype, field, operator, value, enabled)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -94,13 +95,17 @@ pub async fn create_filter_rule(pool: &PgPool, input: &FilterRuleInput) -> Resul
 }
 
 /// 更新过滤规则
-pub async fn update_filter_rule(pool: &PgPool, id: Uuid, input: &FilterRuleInput) -> Result<FilterRuleRecord> {
+pub async fn update_filter_rule(
+    pool: &PgPool,
+    id: Uuid,
+    input: &FilterRuleInput,
+) -> Result<FilterRuleRecord> {
     let record = sqlx::query_as::<_, FilterRuleRecord>(
         "UPDATE filter_rules
          SET name = $2, alert_type = $3, alert_subtype = $4, field = $5, 
              operator = $6, value = $7, enabled = $8, updated_at = now()
          WHERE id = $1
-         RETURNING *"
+         RETURNING *",
     )
     .bind(id)
     .bind(&input.name)
@@ -128,12 +133,10 @@ pub async fn delete_filter_rule(pool: &PgPool, id: Uuid) -> Result<()> {
 
 /// 根据ID查询单个过滤规则
 pub async fn get_filter_rule_by_id(pool: &PgPool, id: Uuid) -> Result<FilterRuleRecord> {
-    let record = sqlx::query_as::<_, FilterRuleRecord>(
-        "SELECT * FROM filter_rules WHERE id = $1"
-    )
-    .bind(id)
-    .fetch_one(pool)
-    .await?;
+    let record = sqlx::query_as::<_, FilterRuleRecord>("SELECT * FROM filter_rules WHERE id = $1")
+        .bind(id)
+        .fetch_one(pool)
+        .await?;
 
     Ok(record)
 }
@@ -147,7 +150,7 @@ pub async fn query_filter_rules(
     let offset = (page - 1) * page_size;
 
     let records = sqlx::query_as::<_, FilterRuleRecord>(
-        "SELECT * FROM filter_rules ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+        "SELECT * FROM filter_rules ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(page_size as i64)
     .bind(offset as i64)
@@ -165,11 +168,10 @@ pub async fn query_filter_rules(
 #[allow(dead_code)]
 pub async fn get_enabled_filter_rules(pool: &PgPool) -> Result<Vec<FilterRuleRecord>> {
     let records = sqlx::query_as::<_, FilterRuleRecord>(
-        "SELECT * FROM filter_rules WHERE enabled = true ORDER BY created_at DESC"
+        "SELECT * FROM filter_rules WHERE enabled = true ORDER BY created_at DESC",
     )
     .fetch_all(pool)
     .await?;
 
     Ok(records)
 }
-

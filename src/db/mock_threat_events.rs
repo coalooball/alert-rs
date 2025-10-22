@@ -1,5 +1,5 @@
 use anyhow::Result;
-use chrono::{DateTime, Utc, NaiveDateTime};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use sqlx::PgPool;
 
 /// 插入威胁事件模拟数据
@@ -27,7 +27,7 @@ pub async fn insert_mock_data(pool: &PgPool) -> Result<usize> {
             $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
             $31, $32, $33, $34, $35, $36, $37, $38, $39, $40,
             $41, $42, $43
-        )"
+        )",
     )
     .bind(1000001_i64)
     .bind("SYS-2025-001")
@@ -65,17 +65,32 @@ pub async fn insert_mock_data(pool: &PgPool) -> Result<usize> {
     .bind(serde_json::json!(["10.0.5.20:8080", "172.16.3.45:445"]))
     .bind(serde_json::json!(["evil-apt.com", "malicious.cn"]))
     .bind(serde_json::json!(["victim-energy.com"]))
-    .bind(serde_json::json!(["http://evil-apt.com/phishing.doc", "http://malicious.cn/exploit"]))
+    .bind(serde_json::json!([
+        "http://evil-apt.com/phishing.doc",
+        "http://malicious.cn/exploit"
+    ]))
     .bind(serde_json::json!(["http://victim-energy.com/login"]))
-    .bind(serde_json::json!(["Trojan.Win32.APTXYZ", "Backdoor.Linux.Cobalt"]))
+    .bind(serde_json::json!([
+        "Trojan.Win32.APTXYZ",
+        "Backdoor.Linux.Cobalt"
+    ]))
     .bind(serde_json::json!(["hash:123abc...", "hash:456def..."]))
     .bind(serde_json::json!(["Cobalt Strike", "PlugX"]))
-    .bind(serde_json::json!(["aptxyz@evil-apt.com", "attacker@phish.cn"]))
-    .bind(serde_json::json!(["admin@victim-energy.com", "it@victim-energy.com"]))
+    .bind(serde_json::json!([
+        "aptxyz@evil-apt.com",
+        "attacker@phish.cn"
+    ]))
+    .bind(serde_json::json!([
+        "admin@victim-energy.com",
+        "it@victim-energy.com"
+    ]))
     .bind(serde_json::json!(["钓鱼邮件主题：紧急安全更新"]))
     .bind(serde_json::json!(["回复邮件：确认收到安全更新"]))
     .bind(serde_json::json!(["Cobalt Strike", "Mimikatz"]))
-    .bind(serde_json::json!(["Windows Server 2019", "Oracle Database 12c"]))
+    .bind(serde_json::json!([
+        "Windows Server 2019",
+        "Oracle Database 12c"
+    ]))
     .bind(serde_json::json!(["CVE-2023-21768", "CVE-2024-12345"]))
     .bind(serde_json::json!(["恶意证书 SHA1: abcd1234efgh5678"]))
     .bind(serde_json::json!(["企业证书 SHA1: xyz9876abcd5432"]))
@@ -95,7 +110,7 @@ pub async fn insert_mock_data(pool: &PgPool) -> Result<usize> {
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
             $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
             $21, $22, $23
-        )"
+        )",
     )
     .bind(1000002_i64)
     .bind("SYS-2025-002")
@@ -135,7 +150,7 @@ pub async fn insert_mock_data(pool: &PgPool) -> Result<usize> {
         ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
             $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
-        )"
+        )",
     )
     .bind(1000003_i64)
     .bind("SYS-2025-003")
@@ -171,7 +186,7 @@ pub async fn insert_mock_data(pool: &PgPool) -> Result<usize> {
         ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
             $11, $12, $13, $14, $15, $16, $17, $18, $19
-        )"
+        )",
     )
     .bind(1000004_i64)
     .bind("SYS-2025-004")
@@ -207,7 +222,7 @@ pub async fn insert_mock_data(pool: &PgPool) -> Result<usize> {
         ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
             $11, $12, $13, $14, $15, $16, $17, $18
-        )"
+        )",
     )
     .bind(1000005_i64)
     .bind("SYS-2025-005")
@@ -241,4 +256,3 @@ fn parse_time(time_str: &str) -> Option<DateTime<Utc>> {
         .ok()
         .map(|dt| dt.and_utc())
 }
-

@@ -10,11 +10,14 @@ use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::models::{HostBehaviorAlert, MaliciousSampleAlert, NetworkAttackAlert};
 use super::{
-    converged_alerts::{insert_converged_network_attack, insert_converged_malicious_sample, insert_converged_host_behavior},
     alert_mapping::insert_mappings_batch,
+    converged_alerts::{
+        insert_converged_host_behavior, insert_converged_malicious_sample,
+        insert_converged_network_attack,
+    },
 };
+use crate::models::{HostBehaviorAlert, MaliciousSampleAlert, NetworkAttackAlert};
 
 /// 插入模拟的收敛告警数据
 pub async fn insert_mock_converged_alerts(pool: &PgPool) -> Result<usize> {
@@ -35,7 +38,7 @@ pub async fn insert_mock_converged_alerts(pool: &PgPool) -> Result<usize> {
 /// 插入模拟的网络攻击告警
 async fn insert_mock_network_attacks(pool: &PgPool) -> Result<usize> {
     let base_time = Utc::now().timestamp();
-    
+
     // 第一组：3个类似的 SQL 注入攻击 -> 收敛为1个
     let mut group1_raw_ids = Vec::new();
     for i in 0..3 {
@@ -45,9 +48,9 @@ async fn insert_mock_network_attacks(pool: &PgPool) -> Result<usize> {
             alarm_severity: Some(3), // 高危
             alarm_name: Some("SQL注入攻击".to_string()),
             alarm_description: Some(format!("检测到SQL注入攻击尝试 #{}", i + 1)),
-            alarm_type: 1, // 网络攻击
+            alarm_type: 1,       // 网络攻击
             alarm_subtype: 1001, // SQL注入
-            source: 1, // 网络流量
+            source: 1,           // 网络流量
             control_rule_id: Some("rule-001".to_string()),
             control_task_id: None,
             procedure_technique_id: Some(vec!["T1190".to_string()]),
@@ -71,11 +74,11 @@ async fn insert_mock_network_attacks(pool: &PgPool) -> Result<usize> {
             vul_desc: Some("MySQL服务器SQL注入漏洞".to_string()),
             data: None,
         };
-        
+
         let raw_id = insert_network_attack_and_get_id(pool, &alert).await?;
         group1_raw_ids.push(raw_id);
     }
-    
+
     // 创建第一个收敛告警
     let converged_alert_1 = NetworkAttackAlert {
         alarm_id: Some("CNA-2024-001".to_string()),
@@ -109,7 +112,7 @@ async fn insert_mock_network_attacks(pool: &PgPool) -> Result<usize> {
         vul_desc: Some("MySQL服务器SQL注入漏洞".to_string()),
         data: None,
     };
-    
+
     let converged_id_1 = insert_converged_network_attack(pool, &converged_alert_1, 3).await?;
     insert_mappings_batch(pool, &group1_raw_ids, converged_id_1, 1).await?;
 
@@ -148,11 +151,11 @@ async fn insert_mock_network_attacks(pool: &PgPool) -> Result<usize> {
             vul_desc: Some("网络端口扫描行为".to_string()),
             data: None,
         };
-        
+
         let raw_id = insert_network_attack_and_get_id(pool, &alert).await?;
         group2_raw_ids.push(raw_id);
     }
-    
+
     let converged_alert_2 = NetworkAttackAlert {
         alarm_id: Some("CNA-2024-002".to_string()),
         alarm_date: Some(base_time - 1800),
@@ -185,7 +188,7 @@ async fn insert_mock_network_attacks(pool: &PgPool) -> Result<usize> {
         vul_desc: Some("网络端口扫描行为".to_string()),
         data: None,
     };
-    
+
     let converged_id_2 = insert_converged_network_attack(pool, &converged_alert_2, 2).await?;
     insert_mappings_batch(pool, &group2_raw_ids, converged_id_2, 1).await?;
 
@@ -195,11 +198,11 @@ async fn insert_mock_network_attacks(pool: &PgPool) -> Result<usize> {
 /// 插入模拟的恶意样本告警
 async fn insert_mock_malicious_samples(pool: &PgPool) -> Result<usize> {
     let base_time = Utc::now().timestamp();
-    
+
     // 第一组：3个相同MD5的样本 -> 收敛为1个
     let mut group1_raw_ids = Vec::new();
     let md5_hash = "5d41402abc4b2a76b9719d911017c592";
-    
+
     for i in 0..3 {
         let alert = MaliciousSampleAlert {
             alarm_id: Some(format!("MS-2024-001-{:03}", i)),
@@ -225,7 +228,9 @@ async fn insert_mock_malicious_samples(pool: &PgPool) -> Result<usize> {
             sample_source: Some(2), // 本地检测
             md5: Some(md5_hash.to_string()),
             sha1: Some("2fd4e1c67a2d28fced849ee1bb76e7391b93eb12".to_string()),
-            sha256: Some("a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3".to_string()),
+            sha256: Some(
+                "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3".to_string(),
+            ),
             sha512: None,
             ssdeep: None,
             sample_original_name: Some("ransomware.exe".to_string()),
@@ -244,11 +249,11 @@ async fn insert_mock_malicious_samples(pool: &PgPool) -> Result<usize> {
             sample_alarm_detail: Some("加密文件行为".to_string()),
             data: None,
         };
-        
+
         let raw_id = insert_malicious_sample_and_get_id(pool, &alert).await?;
         group1_raw_ids.push(raw_id);
     }
-    
+
     let converged_sample_1 = MaliciousSampleAlert {
         alarm_id: Some("CMS-2024-001".to_string()),
         alarm_date: Some(base_time - 2400),
@@ -273,7 +278,9 @@ async fn insert_mock_malicious_samples(pool: &PgPool) -> Result<usize> {
         sample_source: Some(2),
         md5: Some(md5_hash.to_string()),
         sha1: Some("2fd4e1c67a2d28fced849ee1bb76e7391b93eb12".to_string()),
-        sha256: Some("a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3".to_string()),
+        sha256: Some(
+            "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3".to_string(),
+        ),
         sha512: None,
         ssdeep: None,
         sample_original_name: Some("ransomware.exe".to_string()),
@@ -292,7 +299,7 @@ async fn insert_mock_malicious_samples(pool: &PgPool) -> Result<usize> {
         sample_alarm_detail: Some("加密文件行为".to_string()),
         data: None,
     };
-    
+
     let converged_id_1 = insert_converged_malicious_sample(pool, &converged_sample_1, 3).await?;
     insert_mappings_batch(pool, &group1_raw_ids, converged_id_1, 2).await?;
 
@@ -321,7 +328,9 @@ async fn insert_mock_malicious_samples(pool: &PgPool) -> Result<usize> {
         sample_source: Some(2),
         md5: Some("098f6bcd4621d373cade4e832627b4f6".to_string()),
         sha1: Some("a94a8fe5ccb19ba61c4c0873d391e987982fbbd3".to_string()),
-        sha256: Some("9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca7".to_string()),
+        sha256: Some(
+            "9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca7".to_string(),
+        ),
         sha512: None,
         ssdeep: None,
         sample_original_name: Some("trojan.elf".to_string()),
@@ -340,7 +349,7 @@ async fn insert_mock_malicious_samples(pool: &PgPool) -> Result<usize> {
         sample_alarm_detail: Some("后门连接行为".to_string()),
         data: None,
     };
-    
+
     let raw_id = insert_malicious_sample_and_get_id(pool, &trojan_alert).await?;
     let converged_id_2 = insert_converged_malicious_sample(pool, &trojan_alert, 1).await?;
     insert_mappings_batch(pool, &[raw_id], converged_id_2, 2).await?;
@@ -351,10 +360,10 @@ async fn insert_mock_malicious_samples(pool: &PgPool) -> Result<usize> {
 /// 插入模拟的主机行为告警
 async fn insert_mock_host_behaviors(pool: &PgPool) -> Result<usize> {
     let base_time = Utc::now().timestamp();
-    
+
     // 第一组：4个相同主机的注册表修改 -> 收敛为1个
     let mut group1_raw_ids = Vec::new();
-    
+
     for i in 0..4 {
         let alert = HostBehaviorAlert {
             alarm_id: Some(format!("HB-2024-001-{:03}", i)),
@@ -389,17 +398,19 @@ async fn insert_mock_host_behaviors(pool: &PgPool) -> Result<usize> {
             src_process_cli: Some(format!("reg add HKLM\\Software\\Test{}", i)),
             register_key_name: Some(format!("TestKey{}", i)),
             register_key_value: Some("1".to_string()),
-            register_path: Some("HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run".to_string()),
+            register_path: Some(
+                "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run".to_string(),
+            ),
             file_name: None,
             file_md5: None,
             file_path: None,
             data: None,
         };
-        
+
         let raw_id = insert_host_behavior_and_get_id(pool, &alert).await?;
         group1_raw_ids.push(raw_id);
     }
-    
+
     let converged_behavior_1 = HostBehaviorAlert {
         alarm_id: Some("CHB-2024-001".to_string()),
         alarm_date: Some(base_time - 3000),
@@ -439,13 +450,13 @@ async fn insert_mock_host_behaviors(pool: &PgPool) -> Result<usize> {
         file_path: None,
         data: None,
     };
-    
+
     let converged_id_1 = insert_converged_host_behavior(pool, &converged_behavior_1, 4).await?;
     insert_mappings_batch(pool, &group1_raw_ids, converged_id_1, 3).await?;
 
     // 第二组：2个进程注入 -> 收敛为1个
     let mut group2_raw_ids = Vec::new();
-    
+
     for i in 0..2 {
         let alert = HostBehaviorAlert {
             alarm_id: Some(format!("HB-2024-002-{:03}", i)),
@@ -476,7 +487,9 @@ async fn insert_mock_host_behaviors(pool: &PgPool) -> Result<usize> {
             dst_process_path: Some("C:\\Windows\\System32\\svchost.exe".to_string()),
             dst_process_cli: Some("svchost.exe -k netsvcs".to_string()),
             src_process_md5: Some("e99a18c428cb38d5f260853678922e03".to_string()),
-            src_process_path: Some("C:\\Users\\User\\AppData\\Local\\Temp\\malware.exe".to_string()),
+            src_process_path: Some(
+                "C:\\Users\\User\\AppData\\Local\\Temp\\malware.exe".to_string(),
+            ),
             src_process_cli: Some("malware.exe".to_string()),
             register_key_name: None,
             register_key_value: None,
@@ -486,11 +499,11 @@ async fn insert_mock_host_behaviors(pool: &PgPool) -> Result<usize> {
             file_path: None,
             data: None,
         };
-        
+
         let raw_id = insert_host_behavior_and_get_id(pool, &alert).await?;
         group2_raw_ids.push(raw_id);
     }
-    
+
     let converged_behavior_2 = HostBehaviorAlert {
         alarm_id: Some("CHB-2024-002".to_string()),
         alarm_date: Some(base_time - 1500),
@@ -530,7 +543,7 @@ async fn insert_mock_host_behaviors(pool: &PgPool) -> Result<usize> {
         file_path: None,
         data: None,
     };
-    
+
     let converged_id_2 = insert_converged_host_behavior(pool, &converged_behavior_2, 2).await?;
     insert_mappings_batch(pool, &group2_raw_ids, converged_id_2, 3).await?;
 
@@ -541,7 +554,10 @@ async fn insert_mock_host_behaviors(pool: &PgPool) -> Result<usize> {
 // 辅助函数：插入并返回ID
 // ============================================================================
 
-async fn insert_network_attack_and_get_id(pool: &PgPool, alert: &NetworkAttackAlert) -> Result<Uuid> {
+async fn insert_network_attack_and_get_id(
+    pool: &PgPool,
+    alert: &NetworkAttackAlert,
+) -> Result<Uuid> {
     let id: (Uuid,) = sqlx::query_as(
         "INSERT INTO network_attack_alerts (
             alarm_id, alarm_date, alarm_severity, alarm_name, alarm_description,
@@ -554,7 +570,7 @@ async fn insert_network_attack_and_get_id(pool: &PgPool, alert: &NetworkAttackAl
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
             $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
             $21, $22, $23, $24, $25, $26, $27, $28, $29, $30
-        ) RETURNING id"
+        ) RETURNING id",
     )
     .bind(&alert.alarm_id)
     .bind(alert.alarm_date)
@@ -594,7 +610,10 @@ async fn insert_network_attack_and_get_id(pool: &PgPool, alert: &NetworkAttackAl
     Ok(id.0)
 }
 
-async fn insert_malicious_sample_and_get_id(pool: &PgPool, alert: &MaliciousSampleAlert) -> Result<Uuid> {
+async fn insert_malicious_sample_and_get_id(
+    pool: &PgPool,
+    alert: &MaliciousSampleAlert,
+) -> Result<Uuid> {
     let id: (Uuid,) = sqlx::query_as(
         "INSERT INTO malicious_sample_alerts (
             alarm_id, alarm_date, alarm_severity, alarm_name, alarm_description,
@@ -610,7 +629,7 @@ async fn insert_malicious_sample_and_get_id(pool: &PgPool, alert: &MaliciousSamp
             $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
             $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
             $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41
-        ) RETURNING id"
+        ) RETURNING id",
     )
     .bind(&alert.alarm_id)
     .bind(alert.alarm_date)
@@ -645,7 +664,12 @@ async fn insert_malicious_sample_and_get_id(pool: &PgPool, alert: &MaliciousSamp
     .bind(&alert.sample_family)
     .bind(&alert.apt_group)
     .bind(&alert.sample_alarm_engine.as_ref().map(|v| {
-        serde_json::Value::Array(v.iter().cloned().map(|n| serde_json::Value::Number(serde_json::Number::from(n))).collect())
+        serde_json::Value::Array(
+            v.iter()
+                .cloned()
+                .map(|n| serde_json::Value::Number(serde_json::Number::from(n)))
+                .collect(),
+        )
     }))
     .bind(&alert.target_platform)
     .bind(&alert.file_type)
@@ -680,7 +704,7 @@ async fn insert_host_behavior_and_get_id(pool: &PgPool, alert: &HostBehaviorAler
             $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
             $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
             $31, $32, $33, $34, $35, $36, $37
-        ) RETURNING id"
+        ) RETURNING id",
     )
     .bind(&alert.alarm_id)
     .bind(alert.alarm_date)
@@ -726,4 +750,3 @@ async fn insert_host_behavior_and_get_id(pool: &PgPool, alert: &HostBehaviorAler
 
     Ok(id.0)
 }
-

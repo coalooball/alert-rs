@@ -1,75 +1,79 @@
-pub mod threat_event;
-pub mod mock_threat_events;
-pub mod mock_tags;
-pub mod mock_converged_alerts;
-pub mod mock_rules;
-pub mod tag_management;
-pub mod raw_alerts;
-pub mod converged_alerts;
 pub mod alert_mapping;
 pub mod alert_tag_mapping;
+pub mod auto_push;
+pub mod converged_alerts;
 pub mod convergence_rules;
 pub mod correlation_rules;
 pub mod filter_rules;
+pub mod mock_converged_alerts;
+pub mod mock_rules;
+pub mod mock_tags;
+pub mod mock_threat_events;
+pub mod raw_alerts;
+pub mod tag_management;
 pub mod tag_rules;
-pub mod auto_push;
+pub mod threat_event;
 
 use anyhow::Result;
-use sqlx::{PgPool, postgres::PgPoolOptions};
+use sqlx::{postgres::PgPoolOptions, PgPool};
 
 use crate::config::PostgresConfig;
 
-pub use threat_event::{ThreatEventRecord, ThreatEventInput};
+pub use threat_event::{ThreatEventInput, ThreatEventRecord};
 
 // 原始告警
 pub use raw_alerts::{
-    NetworkAttackRecord, MaliciousSampleRecord, HostBehaviorRecord, InvalidAlertRecord,
-    insert_network_attack, insert_malicious_sample, insert_host_behavior, insert_invalid_alert,
+    insert_host_behavior,
+    insert_malicious_sample,
+    insert_network_attack,
     query_invalid_alerts,
+    query_raw_host_behaviors_by_converged_id,
+    query_raw_malicious_samples_by_converged_id,
     // 根据收敛告警ID查询原始告警
     query_raw_network_attacks_by_converged_id,
-    query_raw_malicious_samples_by_converged_id,
-    query_raw_host_behaviors_by_converged_id,
+    HostBehaviorRecord,
+    InvalidAlertRecord,
+    MaliciousSampleRecord,
+    NetworkAttackRecord,
 };
 
 // 保留以备将来直接查询原始告警表使用
 #[allow(unused_imports)]
-pub use raw_alerts::{
-    query_network_attacks, query_malicious_samples, query_host_behaviors,
-};
+pub use raw_alerts::{query_host_behaviors, query_malicious_samples, query_network_attacks};
 
 // 收敛后告警 - 当前使用的主要查询接口
 pub use converged_alerts::{
-    ConvergedNetworkAttackRecord, ConvergedMaliciousSampleRecord, ConvergedHostBehaviorRecord,
-    query_converged_network_attacks, query_converged_malicious_samples, query_converged_host_behaviors,
-    query_new_converged_network_attacks, query_new_converged_malicious_samples, query_new_converged_host_behaviors,
+    query_converged_host_behaviors, query_converged_malicious_samples,
+    query_converged_network_attacks, query_new_converged_host_behaviors,
+    query_new_converged_malicious_samples, query_new_converged_network_attacks,
+    ConvergedHostBehaviorRecord, ConvergedMaliciousSampleRecord, ConvergedNetworkAttackRecord,
 };
 
 // 收敛插入函数
 pub use converged_alerts::{
-    insert_converged_network_attack, insert_converged_malicious_sample, insert_converged_host_behavior,
+    insert_converged_host_behavior, insert_converged_malicious_sample,
+    insert_converged_network_attack,
 };
 
 // 收敛查询和更新函数
 pub use converged_alerts::{
-    find_converged_network_attack_by_five_tuple,
-    find_converged_malicious_sample_by_hash,
-    find_converged_host_behavior_by_host_info,
-    increment_convergence_count_network_attack,
-    increment_convergence_count_malicious_sample,
-    increment_convergence_count_host_behavior,
+    find_converged_host_behavior_by_host_info, find_converged_malicious_sample_by_hash,
+    find_converged_network_attack_by_five_tuple, increment_convergence_count_host_behavior,
+    increment_convergence_count_malicious_sample, increment_convergence_count_network_attack,
 };
 
 // 映射表操作
 pub use alert_mapping::insert_mapping;
 
+// 统一导出存储函数
+pub use raw_alerts::{store_invalid_alert, store_raw_alert};
+
 // 映射表查询函数 - 保留给未来使用
 #[allow(unused_imports)]
 pub use alert_mapping::{
+    count_raw_alerts_by_converged_id, insert_mappings_batch, query_converged_alert_by_raw_id,
+    query_mappings_by_converged_id, query_raw_alerts_by_converged_id,
     AlertConvergenceMappingRecord,
-    insert_mappings_batch,
-    query_raw_alerts_by_converged_id, query_converged_alert_by_raw_id,
-    count_raw_alerts_by_converged_id, query_mappings_by_converged_id,
 };
 
 pub async fn init_postgres(pg: &PostgresConfig) -> Result<PgPool> {
@@ -77,7 +81,7 @@ pub async fn init_postgres(pg: &PostgresConfig) -> Result<PgPool> {
         "postgres://{}:{}@{}:{}/{}",
         pg.user, pg.password, pg.host, pg.port, pg.database
     );
-    
+
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(&dsn)

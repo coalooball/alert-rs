@@ -1,21 +1,23 @@
-use axum::{extract::State, response::{IntoResponse, Response}, Json};
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use anyhow::Result;
+use axum::{
+    extract::State,
+    response::{IntoResponse, Response},
+    Json,
+};
+use chrono::{Duration, Utc};
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::util::Timeout;
-use chrono::{Utc, Duration};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::db::{
-    query_new_converged_network_attacks,
-    query_new_converged_malicious_samples,
-    query_new_converged_host_behaviors,
-};
 use crate::db::auto_push::{
-    insert_push_log, 
-    get_auto_push_config, update_auto_push_config,
-    list_push_logs, list_push_logs_by_type,
+    get_auto_push_config, insert_push_log, list_push_logs, list_push_logs_by_type,
+    update_auto_push_config,
+};
+use crate::db::{
+    query_new_converged_host_behaviors, query_new_converged_malicious_samples,
+    query_new_converged_network_attacks,
 };
 // no model structs needed here
 use crate::api::{ErrorResponse, SuccessResponse};
@@ -37,18 +39,36 @@ pub async fn publish_converged_by_window(
     Json(req): Json<PublishWindowReq>,
 ) -> Response {
     if req.window_minutes == 0 {
-        let err = ErrorResponse { success: false, message: "window_minutes must be > 0".to_string() };
-        return (axum::http::StatusCode::BAD_REQUEST, axum::response::Json(err)).into_response();
+        let err = ErrorResponse {
+            success: false,
+            message: "window_minutes must be > 0".to_string(),
+        };
+        return (
+            axum::http::StatusCode::BAD_REQUEST,
+            axum::response::Json(err),
+        )
+            .into_response();
     }
 
     match do_publish(&state, req.window_minutes).await {
         Ok(count) => {
-            let resp = SuccessResponse { success: true, message: "published".to_string(), data: Some(PublishWindowResp { sent_count: count }) };
+            let resp = SuccessResponse {
+                success: true,
+                message: "published".to_string(),
+                data: Some(PublishWindowResp { sent_count: count }),
+            };
             axum::response::Json(resp).into_response()
         }
         Err(e) => {
-            let err = ErrorResponse { success: false, message: e.to_string() };
-            (axum::http::StatusCode::INTERNAL_SERVER_ERROR, axum::response::Json(err)).into_response()
+            let err = ErrorResponse {
+                success: false,
+                message: e.to_string(),
+            };
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                axum::response::Json(err),
+            )
+                .into_response()
         }
     }
 }
@@ -63,16 +83,19 @@ pub struct UpdatePushConfigReq {
 }
 
 /// 获取推送配置
-pub async fn get_push_config(
-    State(state): State<Arc<AppState>>,
-) -> Response {
+pub async fn get_push_config(State(state): State<Arc<AppState>>) -> Response {
     match get_auto_push_config(&state.pool).await {
-        Ok(config) => {
-            (axum::http::StatusCode::OK, Json(config)).into_response()
-        }
+        Ok(config) => (axum::http::StatusCode::OK, Json(config)).into_response(),
         Err(e) => {
-            let err = ErrorResponse { success: false, message: e.to_string() };
-            (axum::http::StatusCode::INTERNAL_SERVER_ERROR, axum::response::Json(err)).into_response()
+            let err = ErrorResponse {
+                success: false,
+                message: e.to_string(),
+            };
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                axum::response::Json(err),
+            )
+                .into_response()
         }
     }
 }
@@ -88,18 +111,30 @@ pub async fn update_push_config(
         req.enabled,
         req.window_minutes,
         req.interval_seconds,
-    ).await {
+    )
+    .await
+    {
         Ok(_) => {
-            let resp = SuccessResponse { success: true, message: "配置已更新".to_string(), data: None::<()> };
+            let resp = SuccessResponse {
+                success: true,
+                message: "配置已更新".to_string(),
+                data: None::<()>,
+            };
             Json(resp).into_response()
         }
         Err(e) => {
-            let err = ErrorResponse { success: false, message: e.to_string() };
-            (axum::http::StatusCode::INTERNAL_SERVER_ERROR, axum::response::Json(err)).into_response()
+            let err = ErrorResponse {
+                success: false,
+                message: e.to_string(),
+            };
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                axum::response::Json(err),
+            )
+                .into_response()
         }
     }
 }
-
 
 // (之前的 CRUD APIs 已移除：list_push_configs, create_push_config, get_push_config_by_id, delete_push_config_by_id)
 
@@ -136,17 +171,17 @@ pub(crate) async fn do_publish(state: &AppState, window_minutes: u64) -> Result<
         logs_to_insert.push((3, r.id));
         unified_alerts.push(UnifiedAlert::HostBehavior(to_payload_hb(&r)));
     }
-    
+
     // 3. 如果有新告警，则合并为单条消息进行推送
     if unified_alerts.is_empty() {
         return Ok(0);
     }
 
     let producer: FutureProducer = state.kafka.producer_config().create()?;
-    
+
     let payload = serde_json::to_string(&unified_alerts)?;
     let bytes: Vec<u8> = payload.into_bytes();
-    
+
     let delivery_status = producer
         .send(
             FutureRecord::<(), _>::to(&state.topics.converged_alerts).payload(&bytes),
@@ -170,13 +205,7 @@ pub(crate) async fn do_publish(state: &AppState, window_minutes: u64) -> Result<
 // 辅助函数：确保时间戳是毫秒格式
 // 如果值小于 10000000000 (10位数)，认为是秒时间戳，需要转换为毫秒
 fn ensure_millis(timestamp: Option<i64>) -> Option<i64> {
-    timestamp.map(|ts| {
-        if ts < 10000000000 {
-            ts * 1000
-        } else {
-            ts
-        }
-    })
+    timestamp.map(|ts| if ts < 10000000000 { ts * 1000 } else { ts })
 }
 
 // 输出结构体（符合用户给定格式，字段为小驼峰，并补充 modelType 等）
@@ -535,8 +564,9 @@ impl From<crate::db::auto_push::PushLogRecord> for PushLogResp {
             2 => "恶意样本",
             3 => "主机行为",
             _ => "未知",
-        }.to_string();
-        
+        }
+        .to_string();
+
         Self {
             id: log.id.to_string(),
             alert_type: log.alert_type,
@@ -560,16 +590,22 @@ pub async fn get_push_logs(
     State(state): State<Arc<AppState>>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> Response {
-    let page = params.get("page").and_then(|s| s.parse::<u64>().ok()).unwrap_or(1);
-    let page_size = params.get("page_size").and_then(|s| s.parse::<u64>().ok()).unwrap_or(20);
+    let page = params
+        .get("page")
+        .and_then(|s| s.parse::<u64>().ok())
+        .unwrap_or(1);
+    let page_size = params
+        .get("page_size")
+        .and_then(|s| s.parse::<u64>().ok())
+        .unwrap_or(20);
     let alert_type = params.get("alert_type").and_then(|s| s.parse::<i16>().ok());
-    
+
     let result = if let Some(at) = alert_type {
         list_push_logs_by_type(&state.pool, at, page, page_size).await
     } else {
         list_push_logs(&state.pool, page, page_size).await
     };
-    
+
     match result {
         Ok((logs, total)) => {
             let resp = PushLogsResp {
@@ -581,8 +617,15 @@ pub async fn get_push_logs(
             axum::response::Json(resp).into_response()
         }
         Err(e) => {
-            let err = ErrorResponse { success: false, message: e.to_string() };
-            (axum::http::StatusCode::INTERNAL_SERVER_ERROR, axum::response::Json(err)).into_response()
+            let err = ErrorResponse {
+                success: false,
+                message: e.to_string(),
+            };
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                axum::response::Json(err),
+            )
+                .into_response()
         }
     }
 }
@@ -598,30 +641,50 @@ pub async fn run_auto_publisher(state: Arc<AppState>) {
                     match do_publish(&state, window).await {
                         Ok(count) => {
                             if count > 0 {
-                                tracing::info!(target = "auto_push", "Auto published for config '{}': sent={}", config.name, count);
+                                tracing::info!(
+                                    target = "auto_push",
+                                    "Auto published for config '{}': sent={}",
+                                    config.name,
+                                    count
+                                );
                             } else {
                                 tracing::debug!(target = "auto_push", "Auto publish for config '{}' completed, no new alerts to push.", config.name);
                             }
                         }
                         Err(e) => {
-                            tracing::error!(target = "auto_push", "Auto publish failed for config '{}': {}", config.name, e);
+                            tracing::error!(
+                                target = "auto_push",
+                                "Auto publish failed for config '{}': {}",
+                                config.name,
+                                e
+                            );
                         }
                     }
                     // 使用配置的间隔时间
-                    let sleep_duration = std::time::Duration::from_secs(config.interval_seconds as u64);
-                    tracing::debug!(target = "auto_push", "Sleeping for {} seconds.", sleep_duration.as_secs());
+                    let sleep_duration =
+                        std::time::Duration::from_secs(config.interval_seconds as u64);
+                    tracing::debug!(
+                        target = "auto_push",
+                        "Sleeping for {} seconds.",
+                        sleep_duration.as_secs()
+                    );
                     tokio::time::sleep(sleep_duration).await;
                 } else {
-                    tracing::info!(target = "auto_push", "Auto publishing is disabled. Checking again in 60 seconds.");
+                    tracing::info!(
+                        target = "auto_push",
+                        "Auto publishing is disabled. Checking again in 60 seconds."
+                    );
                     tokio::time::sleep(std::time::Duration::from_secs(60)).await;
                 }
             }
             Err(e) => {
-                tracing::error!(target = "auto_push", "Failed to load push config: {}. Retrying in 60 seconds.", e);
+                tracing::error!(
+                    target = "auto_push",
+                    "Failed to load push config: {}. Retrying in 60 seconds.",
+                    e
+                );
                 tokio::time::sleep(std::time::Duration::from_secs(60)).await;
             }
         }
     }
 }
-
-

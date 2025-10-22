@@ -6,8 +6,8 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-use crate::AppState;
 use super::{ErrorResponse, SuccessResponse};
+use crate::AppState;
 
 /// 字段定义
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,9 +27,7 @@ pub struct AlertTypeFields {
 }
 
 /// 获取所有告警字段定义
-pub async fn get_alert_fields(
-    State(_state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+pub async fn get_alert_fields(State(_state): State<Arc<AppState>>) -> impl IntoResponse {
     match load_alert_fields() {
         Ok(fields) => {
             let response = SuccessResponse {
@@ -54,9 +52,9 @@ pub async fn get_alert_fields(
 fn load_alert_fields() -> Result<Vec<AlertTypeFields>, Box<dyn std::error::Error>> {
     let toml_content = std::fs::read_to_string("alert_fields.toml")?;
     let parsed: toml::Value = toml::from_str(&toml_content)?;
-    
+
     let mut result = Vec::new();
-    
+
     // 解析主机行为告警
     if let Some(host_behavior) = parsed.get("host_behavior_alert") {
         result.push(parse_alert_type_fields(
@@ -65,7 +63,7 @@ fn load_alert_fields() -> Result<Vec<AlertTypeFields>, Box<dyn std::error::Error
             host_behavior,
         )?);
     }
-    
+
     // 解析恶意样本告警
     if let Some(malicious_sample) = parsed.get("malicious_sample_alert") {
         result.push(parse_alert_type_fields(
@@ -74,7 +72,7 @@ fn load_alert_fields() -> Result<Vec<AlertTypeFields>, Box<dyn std::error::Error
             malicious_sample,
         )?);
     }
-    
+
     // 解析网络攻击告警
     if let Some(network_attack) = parsed.get("network_attack_alert") {
         result.push(parse_alert_type_fields(
@@ -83,7 +81,7 @@ fn load_alert_fields() -> Result<Vec<AlertTypeFields>, Box<dyn std::error::Error
             network_attack,
         )?);
     }
-    
+
     Ok(result)
 }
 
@@ -94,7 +92,7 @@ fn parse_alert_type_fields(
     value: &toml::Value,
 ) -> Result<AlertTypeFields, Box<dyn std::error::Error>> {
     let mut fields = Vec::new();
-    
+
     if let Some(table) = value.as_table() {
         for (field_name, field_value) in table {
             if let Some(field_table) = field_value.as_table() {
@@ -103,18 +101,18 @@ fn parse_alert_type_fields(
                     .and_then(|v| v.as_str())
                     .unwrap_or("String")
                     .to_string();
-                
+
                 let optional = field_table
                     .get("optional")
                     .and_then(|v| v.as_bool())
                     .unwrap_or(true);
-                
+
                 let description = field_table
                     .get("description")
                     .and_then(|v| v.as_str())
                     .unwrap_or("")
                     .to_string();
-                
+
                 fields.push(FieldDefinition {
                     name: field_name.clone(),
                     field_type,
@@ -124,7 +122,7 @@ fn parse_alert_type_fields(
             }
         }
     }
-    
+
     Ok(AlertTypeFields {
         alert_type: alert_type.to_string(),
         display_name: display_name.to_string(),
@@ -140,9 +138,7 @@ pub struct FieldGroup {
 }
 
 /// 获取常用字段分组
-pub async fn get_common_field_groups(
-    State(_state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+pub async fn get_common_field_groups(State(_state): State<Arc<AppState>>) -> impl IntoResponse {
     let groups = vec![
         FieldGroup {
             group_name: "基础信息".to_string(),
@@ -222,13 +218,12 @@ pub async fn get_common_field_groups(
             ],
         },
     ];
-    
+
     let response = SuccessResponse {
         success: true,
         message: "获取成功".to_string(),
         data: Some(groups),
     };
-    
+
     (StatusCode::OK, Json(response)).into_response()
 }
-

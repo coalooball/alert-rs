@@ -234,6 +234,12 @@ const loadAlarmTypes = async () => {
   try {
     const response = await axios.get('/api/alarm-types')
     alarmTypes.value = response.data
+    // 调试：打印告警类型配置
+    console.log('告警类型配置已加载:', alarmTypes.value)
+    if (alarmTypes.value?.network_attack?.subtypes) {
+      console.log('网络攻击子类型 keys:', Object.keys(alarmTypes.value.network_attack.subtypes))
+      console.log('网络攻击子类型示例:', Object.entries(alarmTypes.value.network_attack.subtypes).slice(0, 3))
+    }
   } catch (error) {
     console.error('加载告警类型失败:', error)
     ElMessage.error('加载告警类型失败')
@@ -261,6 +267,16 @@ const loadRules = async () => {
     if (result.success && result.data) {
       rules.value = result.data.items
       total.value = result.data.total
+      // 调试：打印第一条规则的 alert_subtype 类型和值
+      if (rules.value.length > 0) {
+        const firstRule = rules.value[0]
+        console.log('第一条标签规则:', {
+          name: firstRule.name,
+          alert_type: firstRule.alert_type,
+          alert_subtype: firstRule.alert_subtype,
+          alert_subtype_type: typeof firstRule.alert_subtype
+        })
+      }
     } else {
       ElMessage.error(result.error || '加载标签规则失败')
     }
@@ -305,12 +321,22 @@ const getAlertTypeName = (type) => {
 
 // 获取告警子类型名称
 const getAlertSubtypeName = (type, subtype) => {
-  if (!alarmTypes.value || !type || subtype === null || subtype === undefined) return subtype
+  if (!alarmTypes.value || !type || subtype === null || subtype === undefined || subtype === '') {
+    return subtype || '-'
+  }
   const typeConfig = alarmTypes.value[type]
-  if (!typeConfig || !typeConfig.subtypes) return subtype
+  if (!typeConfig || !typeConfig.subtypes) {
+    return subtype
+  }
   // 确保 subtype 是字符串，因为 config.toml 的 key 都是字符串
-  const subtypeKey = String(subtype)
-  return typeConfig.subtypes[subtypeKey] || subtype
+  const subtypeKey = String(subtype).trim()
+  const name = typeConfig.subtypes[subtypeKey]
+  if (name) {
+    return name
+  }
+  // 如果找不到，打印调试信息
+  console.warn(`未找到子类型映射: type=${type}, subtype=${subtypeKey}, available keys:`, Object.keys(typeConfig.subtypes))
+  return subtype
 }
 
 const handleDelete = (row) => {
@@ -369,22 +395,26 @@ const handleSave = async () => {
     const url = isEdit ? `/api/rules/tag/${formData.value.id}` : '/api/rules/tag'
     const method = isEdit ? 'PUT' : 'POST'
     
+    const payload = {
+      name: formData.value.name,
+      alert_type: formData.value.alert_type,
+      alert_subtype: String(formData.value.alert_subtype), // 确保是字符串
+      condition_field: formData.value.condition_field,
+      condition_operator: formData.value.condition_operator,
+      condition_value: formData.value.condition_value || '',
+      tags: formData.value.tags,
+      description: formData.value.description || null,
+      enabled: formData.value.enabled
+    }
+    
+    console.log('保存标签规则，payload:', payload)
+    
     const response = await fetch(url, {
       method,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        name: formData.value.name,
-        alert_type: formData.value.alert_type,
-        alert_subtype: formData.value.alert_subtype,
-        condition_field: formData.value.condition_field,
-        condition_operator: formData.value.condition_operator,
-        condition_value: formData.value.condition_value || '',
-        tags: formData.value.tags,
-        description: formData.value.description || null,
-        enabled: formData.value.enabled
-      })
+      body: JSON.stringify(payload)
     })
     
     const result = await response.json()

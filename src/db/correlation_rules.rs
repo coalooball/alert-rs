@@ -36,13 +36,13 @@ pub async fn create_correlation_rules_table(pool: &PgPool) -> Result<()> {
             enabled BOOLEAN NOT NULL DEFAULT true,
             created_at TIMESTAMPTZ DEFAULT now(),
             updated_at TIMESTAMPTZ DEFAULT now()
-        )"
+        )",
     )
     .execute(pool)
     .await?;
 
     sqlx::query(
-        "CREATE INDEX IF NOT EXISTS idx_correlation_rules_enabled ON correlation_rules(enabled)"
+        "CREATE INDEX IF NOT EXISTS idx_correlation_rules_enabled ON correlation_rules(enabled)",
     )
     .execute(pool)
     .await?;
@@ -59,11 +59,14 @@ pub async fn drop_correlation_rules_table(pool: &PgPool) -> Result<()> {
 }
 
 /// 创建关联规则
-pub async fn create_correlation_rule(pool: &PgPool, input: &CorrelationRuleInput) -> Result<CorrelationRuleRecord> {
+pub async fn create_correlation_rule(
+    pool: &PgPool,
+    input: &CorrelationRuleInput,
+) -> Result<CorrelationRuleRecord> {
     let record = sqlx::query_as::<_, CorrelationRuleRecord>(
         "INSERT INTO correlation_rules (name, dsl_rule, description, enabled)
          VALUES ($1, $2, $3, $4)
-         RETURNING *"
+         RETURNING *",
     )
     .bind(&input.name)
     .bind(&input.dsl_rule)
@@ -76,12 +79,16 @@ pub async fn create_correlation_rule(pool: &PgPool, input: &CorrelationRuleInput
 }
 
 /// 更新关联规则
-pub async fn update_correlation_rule(pool: &PgPool, id: Uuid, input: &CorrelationRuleInput) -> Result<CorrelationRuleRecord> {
+pub async fn update_correlation_rule(
+    pool: &PgPool,
+    id: Uuid,
+    input: &CorrelationRuleInput,
+) -> Result<CorrelationRuleRecord> {
     let record = sqlx::query_as::<_, CorrelationRuleRecord>(
         "UPDATE correlation_rules
          SET name = $2, dsl_rule = $3, description = $4, enabled = $5, updated_at = now()
          WHERE id = $1
-         RETURNING *"
+         RETURNING *",
     )
     .bind(id)
     .bind(&input.name)
@@ -106,12 +113,11 @@ pub async fn delete_correlation_rule(pool: &PgPool, id: Uuid) -> Result<()> {
 
 /// 根据ID查询单个关联规则
 pub async fn get_correlation_rule_by_id(pool: &PgPool, id: Uuid) -> Result<CorrelationRuleRecord> {
-    let record = sqlx::query_as::<_, CorrelationRuleRecord>(
-        "SELECT * FROM correlation_rules WHERE id = $1"
-    )
-    .bind(id)
-    .fetch_one(pool)
-    .await?;
+    let record =
+        sqlx::query_as::<_, CorrelationRuleRecord>("SELECT * FROM correlation_rules WHERE id = $1")
+            .bind(id)
+            .fetch_one(pool)
+            .await?;
 
     Ok(record)
 }
@@ -125,7 +131,7 @@ pub async fn query_correlation_rules(
     let offset = (page - 1) * page_size;
 
     let records = sqlx::query_as::<_, CorrelationRuleRecord>(
-        "SELECT * FROM correlation_rules ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+        "SELECT * FROM correlation_rules ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(page_size as i64)
     .bind(offset as i64)
@@ -143,11 +149,10 @@ pub async fn query_correlation_rules(
 #[allow(dead_code)]
 pub async fn get_enabled_correlation_rules(pool: &PgPool) -> Result<Vec<CorrelationRuleRecord>> {
     let records = sqlx::query_as::<_, CorrelationRuleRecord>(
-        "SELECT * FROM correlation_rules WHERE enabled = true ORDER BY created_at DESC"
+        "SELECT * FROM correlation_rules WHERE enabled = true ORDER BY created_at DESC",
     )
     .fetch_all(pool)
     .await?;
 
     Ok(records)
 }
-

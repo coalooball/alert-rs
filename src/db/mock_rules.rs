@@ -102,7 +102,7 @@ pub async fn insert_mock_filter_rules(pool: &PgPool) -> Result<usize> {
         FilterRuleInput {
             name: "过滤低危网络攻击".to_string(),
             alert_type: "network_attack".to_string(),
-            alert_subtype: "01001".to_string(),
+            alert_subtype: "1001".to_string(),
             field: "alarm_severity".to_string(),
             operator: "eq".to_string(),
             value: "1".to_string(),
@@ -111,7 +111,7 @@ pub async fn insert_mock_filter_rules(pool: &PgPool) -> Result<usize> {
         FilterRuleInput {
             name: "过滤测试环境IP".to_string(),
             alert_type: "network_attack".to_string(),
-            alert_subtype: "01009".to_string(),
+            alert_subtype: "1009".to_string(),
             field: "src_ip".to_string(),
             operator: "contains".to_string(),
             value: "192.168.100".to_string(),
@@ -120,7 +120,7 @@ pub async fn insert_mock_filter_rules(pool: &PgPool) -> Result<usize> {
         FilterRuleInput {
             name: "过滤已知误报样本".to_string(),
             alert_type: "malicious_sample".to_string(),
-            alert_subtype: "02001".to_string(),
+            alert_subtype: "2001".to_string(),
             field: "md5".to_string(),
             operator: "regex".to_string(),
             value: "^(abc123|def456).*".to_string(),
@@ -129,7 +129,7 @@ pub async fn insert_mock_filter_rules(pool: &PgPool) -> Result<usize> {
         FilterRuleInput {
             name: "过滤白名单进程".to_string(),
             alert_type: "host_behavior".to_string(),
-            alert_subtype: "03001".to_string(),
+            alert_subtype: "3001".to_string(),
             field: "src_process_path".to_string(),
             operator: "contains".to_string(),
             value: "System32\\svchost.exe".to_string(),
@@ -138,7 +138,7 @@ pub async fn insert_mock_filter_rules(pool: &PgPool) -> Result<usize> {
         FilterRuleInput {
             name: "过滤内网扫描".to_string(),
             alert_type: "network_attack".to_string(),
-            alert_subtype: "01001".to_string(),
+            alert_subtype: "1001".to_string(),
             field: "src_ip".to_string(),
             operator: "regex".to_string(),
             value: "^10\\.(0|1|2)\\..+".to_string(),
@@ -147,7 +147,7 @@ pub async fn insert_mock_filter_rules(pool: &PgPool) -> Result<usize> {
         FilterRuleInput {
             name: "过滤信息类告警".to_string(),
             alert_type: "network_attack".to_string(),
-            alert_subtype: "01002".to_string(),
+            alert_subtype: "1002".to_string(),
             field: "alarm_severity".to_string(),
             operator: "eq".to_string(),
             value: "0".to_string(),
@@ -170,7 +170,7 @@ pub async fn insert_mock_tag_rules(pool: &PgPool) -> Result<usize> {
         TagRuleInput {
             name: "高危事件标记".to_string(),
             alert_type: "network_attack".to_string(),
-            alert_subtype: "01009".to_string(),
+            alert_subtype: "1009".to_string(),
             condition_field: "alarm_severity".to_string(),
             condition_operator: "eq".to_string(),
             condition_value: "3".to_string(),
@@ -181,7 +181,7 @@ pub async fn insert_mock_tag_rules(pool: &PgPool) -> Result<usize> {
         TagRuleInput {
             name: "APT攻击标记".to_string(),
             alert_type: "network_attack".to_string(),
-            alert_subtype: "01009".to_string(),
+            alert_subtype: "1009".to_string(),
             condition_field: "apt_group".to_string(),
             condition_operator: "ne".to_string(),
             condition_value: "".to_string(),
@@ -192,18 +192,22 @@ pub async fn insert_mock_tag_rules(pool: &PgPool) -> Result<usize> {
         TagRuleInput {
             name: "勒索软件标记".to_string(),
             alert_type: "malicious_sample".to_string(),
-            alert_subtype: "02001".to_string(),
+            alert_subtype: "2005".to_string(), // 勒索软件对应 2005
             condition_field: "sample_family".to_string(),
             condition_operator: "regex".to_string(),
             condition_value: ".*(Ransom|Crypto|Locker).*".to_string(),
-            tags: vec!["勒索软件".to_string(), "严重".to_string(), "紧急处理".to_string()],
+            tags: vec![
+                "勒索软件".to_string(),
+                "严重".to_string(),
+                "紧急处理".to_string(),
+            ],
             description: Some("识别并标记勒索软件家族".to_string()),
             enabled: true,
         },
         TagRuleInput {
             name: "内网横向移动标记".to_string(),
             alert_type: "host_behavior".to_string(),
-            alert_subtype: "03002".to_string(),
+            alert_subtype: "3007".to_string(), // 横向移动对应 3007
             condition_field: "alarm_name".to_string(),
             condition_operator: "contains".to_string(),
             condition_value: "横向".to_string(),
@@ -214,18 +218,22 @@ pub async fn insert_mock_tag_rules(pool: &PgPool) -> Result<usize> {
         TagRuleInput {
             name: "外联C2标记".to_string(),
             alert_type: "network_attack".to_string(),
-            alert_subtype: "01020".to_string(),
+            alert_subtype: "1004".to_string(), // 后门通信/C2 对应 1004
             condition_field: "alarm_name".to_string(),
             condition_operator: "contains".to_string(),
             condition_value: "C2".to_string(),
-            tags: vec!["C2通信".to_string(), "高优先级".to_string(), "需阻断".to_string()],
+            tags: vec![
+                "C2通信".to_string(),
+                "高优先级".to_string(),
+                "需阻断".to_string(),
+            ],
             description: Some("标记C2通信行为".to_string()),
             enabled: true,
         },
         TagRuleInput {
             name: "数据泄露标记".to_string(),
             alert_type: "host_behavior".to_string(),
-            alert_subtype: "03005".to_string(),
+            alert_subtype: "3008".to_string(), // 数据窃取对应 3008
             condition_field: "alarm_name".to_string(),
             condition_operator: "regex".to_string(),
             condition_value: ".*(泄露|外传|上传).*".to_string(),
@@ -236,7 +244,7 @@ pub async fn insert_mock_tag_rules(pool: &PgPool) -> Result<usize> {
         TagRuleInput {
             name: "已知威胁情报标记".to_string(),
             alert_type: "network_attack".to_string(),
-            alert_subtype: "01009".to_string(),
+            alert_subtype: "1009".to_string(),
             condition_field: "source".to_string(),
             condition_operator: "contains".to_string(),
             condition_value: "威胁情报".to_string(),
@@ -262,6 +270,10 @@ pub async fn insert_all_mock_rules(pool: &PgPool) -> Result<(usize, usize, usize
     let filter_count = insert_mock_filter_rules(pool).await?;
     let tag_count = insert_mock_tag_rules(pool).await?;
 
-    Ok((convergence_count, correlation_count, filter_count, tag_count))
+    Ok((
+        convergence_count,
+        correlation_count,
+        filter_count,
+        tag_count,
+    ))
 }
-

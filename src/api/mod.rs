@@ -1,10 +1,10 @@
-pub mod tag_management;
-pub mod alert_tag;
 pub mod alert_data;
 pub mod alert_fields;
+pub mod alert_tag;
+pub mod auto_publish;
 pub mod dsl_compile;
 pub mod rules;
-pub mod auto_publish;
+pub mod tag_management;
 
 use serde::Serialize;
 
@@ -31,4 +31,3 @@ pub struct ErrorResponse {
     pub success: bool,
     pub message: String,
 }
-

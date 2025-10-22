@@ -11,7 +11,7 @@ lazy_static! {
 
 fn load_valid_fields() -> HashSet<String> {
     let mut fields = HashSet::new();
-    
+
     // 尝试从 alert_fields.toml 读取字段定义
     if let Ok(content) = fs::read_to_string("alert_fields.toml") {
         if let Ok(toml_value) = content.parse::<toml::Value>() {
@@ -26,7 +26,7 @@ fn load_valid_fields() -> HashSet<String> {
             }
         }
     }
-    
+
     // 如果文件不存在或解析失败，添加一些默认字段
     if fields.is_empty() {
         // 通用字段
@@ -38,7 +38,7 @@ fn load_valid_fields() -> HashSet<String> {
         fields.insert("alarm_type".to_string());
         fields.insert("alarm_subtype".to_string());
         fields.insert("source".to_string());
-        
+
         // 网络字段
         fields.insert("src_ip".to_string());
         fields.insert("src_port".to_string());
@@ -47,7 +47,7 @@ fn load_valid_fields() -> HashSet<String> {
         fields.insert("protocol".to_string());
         fields.insert("session_id".to_string());
         fields.insert("ip_version".to_string());
-        
+
         // 主机字段
         fields.insert("host_name".to_string());
         fields.insert("terminal_ip".to_string());
@@ -66,7 +66,7 @@ fn load_valid_fields() -> HashSet<String> {
         fields.insert("register_key_name".to_string());
         fields.insert("register_key_value".to_string());
         fields.insert("register_path".to_string());
-        
+
         // 样本字段
         fields.insert("md5".to_string());
         fields.insert("sha1".to_string());
@@ -87,7 +87,7 @@ fn load_valid_fields() -> HashSet<String> {
         fields.insert("compile_date".to_string());
         fields.insert("last_analy_date".to_string());
         fields.insert("sample_alarm_detail".to_string());
-        
+
         // 网络攻击特有字段
         fields.insert("signature_id".to_string());
         fields.insert("attack_payload".to_string());
@@ -97,7 +97,7 @@ fn load_valid_fields() -> HashSet<String> {
         fields.insert("vul_type".to_string());
         fields.insert("cve_id".to_string());
         fields.insert("vul_desc".to_string());
-        
+
         // 其他
         fields.insert("control_rule_id".to_string());
         fields.insert("control_task_id".to_string());
@@ -105,21 +105,21 @@ fn load_valid_fields() -> HashSet<String> {
         fields.insert("source_file_path".to_string());
         fields.insert("data".to_string());
     }
-    
+
     fields
 }
 
 pub fn validate_fields(rule: &ConvergeRule) -> Result<()> {
     // 验证条件中的字段
     validate_condition_fields(&rule.condition)?;
-    
+
     // 验证分组字段
     for field in &rule.group_by {
         if !VALID_FIELDS.contains(field) {
             return Err(anyhow!("未知字段: {}", field));
         }
     }
-    
+
     Ok(())
 }
 
@@ -130,18 +130,21 @@ pub fn validate_correlate_fields(rule: &CorrelateRule) -> Result<()> {
         event_aliases.insert(event.alias.clone());
         validate_condition_fields(&event.condition)?;
     }
-    
+
     // 验证 JOIN ON 条件中的字段引用
     for clause in &rule.join_on.clauses {
         validate_field_ref(&clause.left, &event_aliases)?;
         validate_field_ref(&clause.right, &event_aliases)?;
     }
-    
+
     // 验证生成块中的严重程度
     if rule.generate.severity > 4 {
-        return Err(anyhow!("SEVERITY 值必须在 1-4 之间，当前值: {}", rule.generate.severity));
+        return Err(anyhow!(
+            "SEVERITY 值必须在 1-4 之间，当前值: {}",
+            rule.generate.severity
+        ));
     }
-    
+
     Ok(())
 }
 
@@ -159,12 +162,12 @@ fn validate_field_ref(field_ref: &FieldRef, event_aliases: &HashSet<String>) -> 
             return Err(anyhow!("未定义的事件别名: {}", alias));
         }
     }
-    
+
     // 验证字段名是否有效
     if !VALID_FIELDS.contains(&field_ref.field_name) {
         return Err(anyhow!("未知字段: {}", field_ref.field_name));
     }
-    
+
     Ok(())
 }
 
@@ -180,4 +183,3 @@ mod tests {
         assert!(fields.contains("src_ip"));
     }
 }
-

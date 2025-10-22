@@ -1,5 +1,5 @@
 //! 收敛后告警表及相关操作
-//! 
+//!
 //! 本模块包含三类收敛后告警表的定义和操作：
 //! - 网络攻击收敛告警表 (converged_network_attack_alerts)
 //! - 恶意样本收敛告警表 (converged_malicious_sample_alerts)  
@@ -11,9 +11,9 @@
 //! - 分页查询收敛后告警数据
 
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 use crate::models::{HostBehaviorAlert, MaliciousSampleAlert, NetworkAttackAlert};
 
@@ -192,7 +192,7 @@ pub async fn create_converged_alerts_tables(pool: &PgPool) -> Result<()> {
             data JSONB,
             convergence_count INTEGER DEFAULT 1,
             created_at TIMESTAMPTZ DEFAULT now()
-        )"
+        )",
     )
     .execute(pool)
     .await?;
@@ -244,7 +244,7 @@ pub async fn create_converged_alerts_tables(pool: &PgPool) -> Result<()> {
             data JSONB,
             convergence_count INTEGER DEFAULT 1,
             created_at TIMESTAMPTZ DEFAULT now()
-        )"
+        )",
     )
     .execute(pool)
     .await?;
@@ -292,7 +292,7 @@ pub async fn create_converged_alerts_tables(pool: &PgPool) -> Result<()> {
             data JSONB,
             convergence_count INTEGER DEFAULT 1,
             created_at TIMESTAMPTZ DEFAULT now()
-        )"
+        )",
     )
     .execute(pool)
     .await?;
@@ -318,14 +318,13 @@ pub async fn drop_converged_alerts_tables(pool: &PgPool) -> Result<()> {
 // 插入操作
 // ============================================================================
 
-pub async fn insert_converged_network_attack(pool: &PgPool, alert: &NetworkAttackAlert, convergence_count: i32) -> Result<Uuid> {
+pub async fn insert_converged_network_attack(
+    pool: &PgPool,
+    alert: &NetworkAttackAlert,
+    convergence_count: i32,
+) -> Result<Uuid> {
     let procedure_technique_id = alert.procedure_technique_id.as_ref().map(|v| {
-        serde_json::Value::Array(
-            v.iter()
-                .cloned()
-                .map(serde_json::Value::String)
-                .collect(),
-        )
+        serde_json::Value::Array(v.iter().cloned().map(serde_json::Value::String).collect())
     });
 
     let id: (Uuid,) = sqlx::query_as(
@@ -340,7 +339,7 @@ pub async fn insert_converged_network_attack(pool: &PgPool, alert: &NetworkAttac
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
             $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
             $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31
-        ) RETURNING id"
+        ) RETURNING id",
     )
     .bind(&alert.alarm_id)
     .bind(alert.alarm_date)
@@ -379,14 +378,13 @@ pub async fn insert_converged_network_attack(pool: &PgPool, alert: &NetworkAttac
     Ok(id.0)
 }
 
-pub async fn insert_converged_malicious_sample(pool: &PgPool, alert: &MaliciousSampleAlert, convergence_count: i32) -> Result<Uuid> {
+pub async fn insert_converged_malicious_sample(
+    pool: &PgPool,
+    alert: &MaliciousSampleAlert,
+    convergence_count: i32,
+) -> Result<Uuid> {
     let procedure_technique_id = alert.procedure_technique_id.as_ref().map(|v| {
-        serde_json::Value::Array(
-            v.iter()
-                .cloned()
-                .map(serde_json::Value::String)
-                .collect(),
-        )
+        serde_json::Value::Array(v.iter().cloned().map(serde_json::Value::String).collect())
     });
 
     let sample_alarm_engine = alert.sample_alarm_engine.as_ref().map(|v| {
@@ -463,14 +461,13 @@ pub async fn insert_converged_malicious_sample(pool: &PgPool, alert: &MaliciousS
     Ok(id.0)
 }
 
-pub async fn insert_converged_host_behavior(pool: &PgPool, alert: &HostBehaviorAlert, convergence_count: i32) -> Result<Uuid> {
+pub async fn insert_converged_host_behavior(
+    pool: &PgPool,
+    alert: &HostBehaviorAlert,
+    convergence_count: i32,
+) -> Result<Uuid> {
     let procedure_technique_id = alert.procedure_technique_id.as_ref().map(|v| {
-        serde_json::Value::Array(
-            v.iter()
-                .cloned()
-                .map(serde_json::Value::String)
-                .collect(),
-        )
+        serde_json::Value::Array(v.iter().cloned().map(serde_json::Value::String).collect())
     });
 
     let id: (Uuid,) = sqlx::query_as(
@@ -489,7 +486,7 @@ pub async fn insert_converged_host_behavior(pool: &PgPool, alert: &HostBehaviorA
             $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
             $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
             $31, $32, $33, $34, $35, $36, $37, $38
-        ) RETURNING id"
+        ) RETURNING id",
     )
     .bind(&alert.alarm_id)
     .bind(alert.alarm_date)
@@ -552,7 +549,7 @@ pub async fn find_converged_network_attack_by_five_tuple(
            AND dst_ip = $3 
            AND dst_port = $4 
            AND protocol = $5
-         LIMIT 1"
+         LIMIT 1",
     )
     .bind(&alert.src_ip)
     .bind(alert.src_port.map(|v| v as i32))
@@ -576,31 +573,31 @@ pub async fn find_converged_malicious_sample_by_hash(
         let result: Option<(Uuid,)> = sqlx::query_as(
             "SELECT id FROM converged_malicious_sample_alerts 
              WHERE sha256 = $1 
-             LIMIT 1"
+             LIMIT 1",
         )
         .bind(sha256)
         .fetch_optional(pool)
         .await?;
-        
+
         if result.is_some() {
             return Ok(result.map(|(id,)| id));
         }
     }
-    
+
     // 其次使用 md5
     if let Some(ref md5) = alert.md5 {
         let result: Option<(Uuid,)> = sqlx::query_as(
             "SELECT id FROM converged_malicious_sample_alerts 
              WHERE md5 = $1 
-             LIMIT 1"
+             LIMIT 1",
         )
         .bind(md5)
         .fetch_optional(pool)
         .await?;
-        
+
         return Ok(result.map(|(id,)| id));
     }
-    
+
     Ok(None)
 }
 
@@ -616,7 +613,7 @@ pub async fn find_converged_host_behavior_by_host_info(
            AND terminal_ip = $2 
            AND dst_process_path = $3 
            AND src_process_path = $4
-         LIMIT 1"
+         LIMIT 1",
     )
     .bind(&alert.host_name)
     .bind(&alert.terminal_ip)
@@ -636,7 +633,7 @@ pub async fn increment_convergence_count_network_attack(
     sqlx::query(
         "UPDATE converged_network_attack_alerts 
          SET convergence_count = convergence_count + 1 
-         WHERE id = $1"
+         WHERE id = $1",
     )
     .bind(converged_id)
     .execute(pool)
@@ -653,7 +650,7 @@ pub async fn increment_convergence_count_malicious_sample(
     sqlx::query(
         "UPDATE converged_malicious_sample_alerts 
          SET convergence_count = convergence_count + 1 
-         WHERE id = $1"
+         WHERE id = $1",
     )
     .bind(converged_id)
     .execute(pool)
@@ -670,7 +667,7 @@ pub async fn increment_convergence_count_host_behavior(
     sqlx::query(
         "UPDATE converged_host_behavior_alerts 
          SET convergence_count = convergence_count + 1 
-         WHERE id = $1"
+         WHERE id = $1",
     )
     .bind(converged_id)
     .execute(pool)
@@ -683,27 +680,35 @@ pub async fn increment_convergence_count_host_behavior(
 // 查询操作
 // ============================================================================
 
-pub async fn query_converged_network_attacks(pool: &PgPool, page: u64, page_size: u64) -> Result<(Vec<ConvergedNetworkAttackRecord>, u64)> {
+pub async fn query_converged_network_attacks(
+    pool: &PgPool,
+    page: u64,
+    page_size: u64,
+) -> Result<(Vec<ConvergedNetworkAttackRecord>, u64)> {
     let offset = (page - 1) * page_size;
-    
+
     let records = sqlx::query_as::<_, ConvergedNetworkAttackRecord>(
-        "SELECT * FROM converged_network_attack_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+        "SELECT * FROM converged_network_attack_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(page_size as i64)
     .bind(offset as i64)
     .fetch_all(pool)
     .await?;
-    
+
     let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM converged_network_attack_alerts")
         .fetch_one(pool)
         .await?;
-    
+
     Ok((records, total.0 as u64))
 }
 
-pub async fn query_converged_malicious_samples(pool: &PgPool, page: u64, page_size: u64) -> Result<(Vec<ConvergedMaliciousSampleRecord>, u64)> {
+pub async fn query_converged_malicious_samples(
+    pool: &PgPool,
+    page: u64,
+    page_size: u64,
+) -> Result<(Vec<ConvergedMaliciousSampleRecord>, u64)> {
     let offset = (page - 1) * page_size;
-    
+
     let records = sqlx::query_as::<_, ConvergedMaliciousSampleRecord>(
         "SELECT * FROM converged_malicious_sample_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2"
     )
@@ -711,32 +716,35 @@ pub async fn query_converged_malicious_samples(pool: &PgPool, page: u64, page_si
     .bind(offset as i64)
     .fetch_all(pool)
     .await?;
-    
+
     let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM converged_malicious_sample_alerts")
         .fetch_one(pool)
         .await?;
-    
+
     Ok((records, total.0 as u64))
 }
 
-pub async fn query_converged_host_behaviors(pool: &PgPool, page: u64, page_size: u64) -> Result<(Vec<ConvergedHostBehaviorRecord>, u64)> {
+pub async fn query_converged_host_behaviors(
+    pool: &PgPool,
+    page: u64,
+    page_size: u64,
+) -> Result<(Vec<ConvergedHostBehaviorRecord>, u64)> {
     let offset = (page - 1) * page_size;
-    
+
     let records = sqlx::query_as::<_, ConvergedHostBehaviorRecord>(
-        "SELECT * FROM converged_host_behavior_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+        "SELECT * FROM converged_host_behavior_alerts ORDER BY created_at DESC LIMIT $1 OFFSET $2",
     )
     .bind(page_size as i64)
     .bind(offset as i64)
     .fetch_all(pool)
     .await?;
-    
+
     let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM converged_host_behavior_alerts")
         .fetch_one(pool)
         .await?;
-    
+
     Ok((records, total.0 as u64))
 }
-
 
 // ============================================================================
 // 自动推送专用查询
@@ -792,4 +800,3 @@ pub async fn query_new_converged_host_behaviors(
     .await?;
     Ok(records)
 }
-

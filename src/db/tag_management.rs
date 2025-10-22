@@ -38,23 +38,19 @@ pub async fn create_tag_table(pool: &PgPool) -> Result<()> {
             usage_count INTEGER NOT NULL DEFAULT 0,
             created_at TIMESTAMPTZ DEFAULT now(),
             updated_at TIMESTAMPTZ DEFAULT now()
-        )"
+        )",
     )
     .execute(pool)
     .await?;
 
     // 创建索引以优化查询
-    sqlx::query(
-        "CREATE INDEX IF NOT EXISTS idx_tags_category ON tags(category)"
-    )
-    .execute(pool)
-    .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_tags_category ON tags(category)")
+        .execute(pool)
+        .await?;
 
-    sqlx::query(
-        "CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name)"
-    )
-    .execute(pool)
-    .await?;
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name)")
+        .execute(pool)
+        .await?;
 
     Ok(())
 }
@@ -72,7 +68,7 @@ pub async fn create_tag(pool: &PgPool, input: &TagInput) -> Result<TagRecord> {
     let record = sqlx::query_as::<_, TagRecord>(
         "INSERT INTO tags (name, category, color, description)
          VALUES ($1, $2, $3, $4)
-         RETURNING *"
+         RETURNING *",
     )
     .bind(&input.name)
     .bind(&input.category)
@@ -90,7 +86,7 @@ pub async fn update_tag(pool: &PgPool, id: Uuid, input: &TagInput) -> Result<Tag
         "UPDATE tags
          SET name = $2, category = $3, color = $4, description = $5, updated_at = now()
          WHERE id = $1
-         RETURNING *"
+         RETURNING *",
     )
     .bind(id)
     .bind(&input.name)
@@ -115,12 +111,10 @@ pub async fn delete_tag(pool: &PgPool, id: Uuid) -> Result<()> {
 
 /// 根据 ID 查询单个标签
 pub async fn get_tag_by_id(pool: &PgPool, id: Uuid) -> Result<TagRecord> {
-    let record = sqlx::query_as::<_, TagRecord>(
-        "SELECT * FROM tags WHERE id = $1"
-    )
-    .bind(id)
-    .fetch_one(pool)
-    .await?;
+    let record = sqlx::query_as::<_, TagRecord>("SELECT * FROM tags WHERE id = $1")
+        .bind(id)
+        .fetch_one(pool)
+        .await?;
 
     Ok(record)
 }
@@ -168,20 +162,16 @@ pub async fn query_tags(
         .fetch_all(pool)
         .await?;
 
-    let total: (i64,) = sqlx::query_as(&count_query)
-        .fetch_one(pool)
-        .await?;
+    let total: (i64,) = sqlx::query_as(&count_query).fetch_one(pool).await?;
 
     Ok((records, total.0 as u64))
 }
 
 /// 查询所有标签（不分页）
 pub async fn get_all_tags(pool: &PgPool) -> Result<Vec<TagRecord>> {
-    let records = sqlx::query_as::<_, TagRecord>(
-        "SELECT * FROM tags ORDER BY category, name"
-    )
-    .fetch_all(pool)
-    .await?;
+    let records = sqlx::query_as::<_, TagRecord>("SELECT * FROM tags ORDER BY category, name")
+        .fetch_all(pool)
+        .await?;
 
     Ok(records)
 }
@@ -189,12 +179,10 @@ pub async fn get_all_tags(pool: &PgPool) -> Result<Vec<TagRecord>> {
 /// 增加标签使用次数
 #[allow(dead_code)]
 pub async fn increment_tag_usage(pool: &PgPool, id: Uuid) -> Result<()> {
-    sqlx::query(
-        "UPDATE tags SET usage_count = usage_count + 1, updated_at = now() WHERE id = $1"
-    )
-    .bind(id)
-    .execute(pool)
-    .await?;
+    sqlx::query("UPDATE tags SET usage_count = usage_count + 1, updated_at = now() WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await?;
 
     Ok(())
 }
@@ -214,12 +202,10 @@ pub async fn decrement_tag_usage(pool: &PgPool, id: Uuid) -> Result<()> {
 
 /// 根据名称查询标签
 pub async fn get_tag_by_name(pool: &PgPool, name: &str) -> Result<Option<TagRecord>> {
-    let record = sqlx::query_as::<_, TagRecord>(
-        "SELECT * FROM tags WHERE name = $1"
-    )
-    .bind(name)
-    .fetch_optional(pool)
-    .await?;
+    let record = sqlx::query_as::<_, TagRecord>("SELECT * FROM tags WHERE name = $1")
+        .bind(name)
+        .fetch_optional(pool)
+        .await?;
 
     Ok(record)
 }
@@ -234,7 +220,7 @@ pub async fn create_tags_if_not_exist(pool: &PgPool, names: &[String]) -> Result
             "INSERT INTO tags (name, category, color, description)
              VALUES ($1, $2, $3, $4)
              ON CONFLICT (name) DO UPDATE SET updated_at = now()
-             RETURNING *"
+             RETURNING *",
         )
         .bind(name)
         .bind("其他")
@@ -248,4 +234,3 @@ pub async fn create_tags_if_not_exist(pool: &PgPool, names: &[String]) -> Result
 
     Ok(records)
 }
-

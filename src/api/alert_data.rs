@@ -7,9 +7,9 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
 
+use super::PageResponse;
 use crate::db::{self, ThreatEventInput};
 use crate::AppState;
-use super::PageResponse;
 
 // 为前端响应创建新的结构体，添加 alarm_subtype_name 字段
 #[derive(Serialize)]
@@ -67,7 +67,10 @@ pub async fn get_network_attacks(
                         .get(&r.alarm_subtype.to_string())
                         .cloned()
                         .unwrap_or_else(|| "未知".to_string());
-                    NetworkAttackResp { inner: r, alarm_subtype_name: subtype_name }
+                    NetworkAttackResp {
+                        inner: r,
+                        alarm_subtype_name: subtype_name,
+                    }
                 })
                 .collect();
 
@@ -107,7 +110,10 @@ pub async fn get_malicious_samples(
                         .get(&r.alarm_subtype.to_string())
                         .cloned()
                         .unwrap_or_else(|| "未知".to_string());
-                    MaliciousSampleResp { inner: r, alarm_subtype_name: subtype_name }
+                    MaliciousSampleResp {
+                        inner: r,
+                        alarm_subtype_name: subtype_name,
+                    }
                 })
                 .collect();
 
@@ -147,7 +153,10 @@ pub async fn get_host_behaviors(
                         .get(&r.alarm_subtype.to_string())
                         .cloned()
                         .unwrap_or_else(|| "未知".to_string());
-                    HostBehaviorResp { inner: r, alarm_subtype_name: subtype_name }
+                    HostBehaviorResp {
+                        inner: r,
+                        alarm_subtype_name: subtype_name,
+                    }
                 })
                 .collect();
 
@@ -199,8 +208,7 @@ pub async fn get_threat_events(
     State(state): State<Arc<AppState>>,
     Query(params): Query<PageQuery>,
 ) -> Json<PageResponse<db::ThreatEventRecord>> {
-    match db::threat_event::query_threat_events(&state.pool, params.page, params.page_size).await
-    {
+    match db::threat_event::query_threat_events(&state.pool, params.page, params.page_size).await {
         Ok((data, total)) => Json(PageResponse {
             data,
             total,
@@ -287,4 +295,3 @@ pub async fn get_raw_host_behaviors_by_converged_id(
         }
     }
 }
-

@@ -103,7 +103,7 @@ pub async fn create_threat_event_table(pool: &PgPool) -> Result<()> {
             attack_certificate JSONB,
             victim_certificate JSONB,
             created_at TIMESTAMPTZ DEFAULT now()
-        )"
+        )",
     )
     .execute(pool)
     .await?;
@@ -133,7 +133,7 @@ pub async fn insert_threat_event(pool: &PgPool, event: &ThreatEventInput) -> Res
             $21, $22, $23, $24, $25, $26, $27, $28, $29, $30,
             $31, $32, $33, $34, $35, $36, $37, $38, $39, $40,
             $41, $42, $43
-        ) RETURNING id"
+        ) RETURNING id",
     )
     .bind(&event.event_id)
     .bind(&event.system_code)
@@ -210,12 +210,11 @@ pub async fn query_threat_events(
 /// 根据ID查询单个威胁事件
 #[allow(dead_code)]
 pub async fn get_threat_event_by_id(pool: &PgPool, id: Uuid) -> Result<Option<ThreatEventRecord>> {
-    let record = sqlx::query_as::<_, ThreatEventRecord>(
-        "SELECT * FROM threat_events WHERE id = $1",
-    )
-    .bind(id)
-    .fetch_optional(pool)
-    .await?;
+    let record =
+        sqlx::query_as::<_, ThreatEventRecord>("SELECT * FROM threat_events WHERE id = $1")
+            .bind(id)
+            .fetch_optional(pool)
+            .await?;
 
     Ok(record)
 }
@@ -267,7 +266,7 @@ pub async fn update_threat_event(pool: &PgPool, id: Uuid, event: &ThreatEventInp
             attack_vulnerability = $42,
             attack_certificate = $43,
             victim_certificate = $44
-        WHERE id = $1"
+        WHERE id = $1",
     )
     .bind(id)
     .bind(&event.event_id)
@@ -374,4 +373,3 @@ pub struct ThreatEventInput {
     pub attack_certificate: Option<serde_json::Value>,
     pub victim_certificate: Option<serde_json::Value>,
 }
-

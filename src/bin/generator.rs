@@ -176,7 +176,11 @@ async fn generate_network_attacks(
     let mut sent = 0;
     loop {
         let alert = generators::generate_network_attack_alert();
-        println!("📤 发送: {} - {}", alert.alarm_id.as_ref().unwrap(), alert.alarm_name.as_ref().unwrap());
+        println!(
+            "📤 发送: {} - {}",
+            alert.alarm_id.as_ref().unwrap(),
+            alert.alarm_name.as_ref().unwrap()
+        );
 
         let payload = serde_json::to_vec(&alert)?;
         let delivery = producer
@@ -232,7 +236,11 @@ async fn generate_malicious_samples(
     let mut sent = 0;
     loop {
         let alert = generators::generate_malicious_sample_alert();
-        println!("📤 发送: {} - {}", alert.alarm_id.as_ref().unwrap(), alert.alarm_name.as_ref().unwrap());
+        println!(
+            "📤 发送: {} - {}",
+            alert.alarm_id.as_ref().unwrap(),
+            alert.alarm_name.as_ref().unwrap()
+        );
 
         let payload = serde_json::to_vec(&alert)?;
         let delivery = producer
@@ -288,7 +296,11 @@ async fn generate_host_behaviors(
     let mut sent = 0;
     loop {
         let alert = generators::generate_host_behavior_alert();
-        println!("📤 发送: {} - {}", alert.alarm_id.as_ref().unwrap(), alert.alarm_name.as_ref().unwrap());
+        println!(
+            "📤 发送: {} - {}",
+            alert.alarm_id.as_ref().unwrap(),
+            alert.alarm_name.as_ref().unwrap()
+        );
 
         let payload = serde_json::to_vec(&alert)?;
         let delivery = producer
@@ -349,7 +361,11 @@ async fn generate_all_types(
         match alert_type {
             0 => {
                 let alert = generators::generate_network_attack_alert();
-                println!("📤 [网络攻击] {}: {}", alert.alarm_id.as_ref().unwrap(), alert.alarm_name.as_ref().unwrap());
+                println!(
+                    "📤 [网络攻击] {}: {}",
+                    alert.alarm_id.as_ref().unwrap(),
+                    alert.alarm_name.as_ref().unwrap()
+                );
                 let payload = serde_json::to_vec(&alert)?;
                 let res = producer
                     .send(
@@ -363,7 +379,11 @@ async fn generate_all_types(
             }
             1 => {
                 let alert = generators::generate_malicious_sample_alert();
-                println!("📤 [恶意样本] {}: {}", alert.alarm_id.as_ref().unwrap(), alert.alarm_name.as_ref().unwrap());
+                println!(
+                    "📤 [恶意样本] {}: {}",
+                    alert.alarm_id.as_ref().unwrap(),
+                    alert.alarm_name.as_ref().unwrap()
+                );
                 let payload = serde_json::to_vec(&alert)?;
                 let res = producer
                     .send(
@@ -377,7 +397,11 @@ async fn generate_all_types(
             }
             _ => {
                 let alert = generators::generate_host_behavior_alert();
-                println!("📤 [主机行为] {}: {}", alert.alarm_id.as_ref().unwrap(), alert.alarm_name.as_ref().unwrap());
+                println!(
+                    "📤 [主机行为] {}: {}",
+                    alert.alarm_id.as_ref().unwrap(),
+                    alert.alarm_name.as_ref().unwrap()
+                );
                 let payload = serde_json::to_vec(&alert)?;
                 let res = producer
                     .send(

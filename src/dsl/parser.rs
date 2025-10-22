@@ -1,6 +1,6 @@
+use anyhow::{anyhow, Result};
 use pest::Parser;
 use pest_derive::Parser;
-use anyhow::{anyhow, Result};
 
 use super::types::*;
 
@@ -9,8 +9,8 @@ use super::types::*;
 pub struct DslParser;
 
 pub fn parse_converge_rule(input: &str) -> Result<ConvergeRule> {
-    let pairs = DslParser::parse(Rule::converge_rule, input)
-        .map_err(|e| anyhow!("解析错误: {}", e))?;
+    let pairs =
+        DslParser::parse(Rule::converge_rule, input).map_err(|e| anyhow!("解析错误: {}", e))?;
 
     let mut condition = None;
     let mut group_by = Vec::new();
@@ -59,8 +59,8 @@ pub fn parse_converge_rule(input: &str) -> Result<ConvergeRule> {
 }
 
 pub fn parse_correlate_rule(input: &str) -> Result<CorrelateRule> {
-    let pairs = DslParser::parse(Rule::correlate_rule, input)
-        .map_err(|e| anyhow!("解析错误: {}", e))?;
+    let pairs =
+        DslParser::parse(Rule::correlate_rule, input).map_err(|e| anyhow!("解析错误: {}", e))?;
 
     let mut events = Vec::new();
     let mut join_on = None;
@@ -165,7 +165,7 @@ fn parse_simple_condition(pair: pest::iterators::Pair<Rule>) -> Result<Condition
 
 fn parse_field_ref(pair: pest::iterators::Pair<Rule>) -> Result<FieldRef> {
     let parts: Vec<_> = pair.into_inner().collect();
-    
+
     if parts.len() == 2 {
         Ok(FieldRef {
             event_alias: Some(parts[0].as_str().to_string()),
@@ -214,7 +214,9 @@ fn parse_value(pair: pest::iterators::Pair<Rule>) -> Result<Value> {
         return Ok(match inner_pair.as_rule() {
             Rule::number => Value::Number(inner_pair.as_str().parse()?),
             Rule::string => {
-                let s = inner_pair.into_inner().next()
+                let s = inner_pair
+                    .into_inner()
+                    .next()
                     .ok_or_else(|| anyhow!("字符串解析错误"))?
                     .as_str()
                     .to_string();
@@ -291,12 +293,12 @@ fn parse_join_condition(pair: pest::iterators::Pair<Rule>) -> Result<JoinConditi
 
     // 收集所有内部 pairs
     let mut inner_pairs: Vec<_> = pair.into_inner().collect();
-    
+
     // 如果只有一个 inner pair 且它也是 join_condition，递归处理
     if inner_pairs.len() == 1 && inner_pairs[0].as_rule() == Rule::join_condition {
         inner_pairs = inner_pairs[0].clone().into_inner().collect();
     }
-    
+
     let mut i = 0;
     while i < inner_pairs.len() {
         match inner_pairs[i].as_rule() {
@@ -304,13 +306,13 @@ fn parse_join_condition(pair: pest::iterators::Pair<Rule>) -> Result<JoinConditi
                 // 找到第一个字段引用
                 if i + 2 < inner_pairs.len() {
                     let left = parse_field_ref(inner_pairs[i].clone())?;
-                    
+
                     // 跳过 eq_op (i+1)
                     if inner_pairs[i + 1].as_rule() == Rule::eq_op {
                         // 获取右侧字段 (i+2)
                         if inner_pairs[i + 2].as_rule() == Rule::field_ref {
                             let right = parse_field_ref(inner_pairs[i + 2].clone())?;
-                            
+
                             clauses.push(JoinClause {
                                 left,
                                 right,
@@ -397,4 +399,3 @@ fn parse_generate_block(pair: pest::iterators::Pair<Rule>) -> Result<GenerateBlo
         description: description.ok_or_else(|| anyhow!("缺少 DESCRIPTION"))?,
     })
 }
-

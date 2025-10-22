@@ -7,9 +7,9 @@ use serde::Deserialize;
 use std::sync::Arc;
 use uuid::Uuid;
 
+use super::{ErrorResponse, PageResponse, SuccessResponse};
 use crate::db::tag_management::{self, TagInput};
 use crate::AppState;
-use super::{ErrorResponse, PageResponse, SuccessResponse};
 
 /// 查询参数
 #[derive(Deserialize)]
@@ -220,8 +220,7 @@ pub async fn update_tag(
                             success: false,
                             message: format!("检查标签名称失败: {}", e),
                         };
-                        return (StatusCode::INTERNAL_SERVER_ERROR, Json(error))
-                            .into_response();
+                        return (StatusCode::INTERNAL_SERVER_ERROR, Json(error)).into_response();
                     }
                 }
             }
@@ -293,4 +292,3 @@ pub async fn delete_tag(
         }
     }
 }
-
